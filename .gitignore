@@ -1,0 +1,7 @@
+/*
+!.gitignore
+!projects/
+/projects/*
+!/projects/01/
+/projects/01/*
+!/projects/01/*.hdl
