@@ -1,7 +1,8 @@
-/*
-!.gitignore
-!projects/
-/projects/*
-!/projects/01/
-/projects/01/*
-!/projects/01/*.hdl
+.DS_Store
+*.html
+*.pdf
+**/*.cmp
+**/*.out
+**/*.tst
+/HDL*
+/tools
