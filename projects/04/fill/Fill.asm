@@ -28,9 +28,9 @@
                 @INFINITE_LOOP
                 D;JEQ            // if (i - 8192) == 0 goto INFINITE_LOOP
                 @SCREEN
-                D=A              // D = 24576
+                D=A              // D = 16384
                 @i
-                A=D+M            // A = 24576 + i
+                A=D+M            // A = 16384 + i
                 M=-1             // RAM[A] = black
                 @i
                 M=M+1            // i = i + 1
@@ -44,9 +44,9 @@
                 @INFINITE_LOOP
                 D;JEQ            // if (i - 8192) == 0 goto INFINITE_LOOP
                 @SCREEN
-                D=A              // D = 24576
+                D=A              // D = 16384
                 @i
-                A=D+M            // A = 24576 + i
+                A=D+M            // A = 16384 + i
                 M=0              // RAM[A] = white
                 @i
                 M=M+1            // i = i + 1
