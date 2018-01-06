@@ -28,7 +28,7 @@
                 @8192
                 D=D-A            // D = i - 8192
                 @READ_KEYBOARD
-                D;JEQ            // if (i - 8192) == 0 goto INFINITE_LOOP
+                D;JEQ            // if (i - 8192) == 0 goto READ_KEYBOARD
                 @SCREEN
                 D=A              // D = 16384
                 @i
