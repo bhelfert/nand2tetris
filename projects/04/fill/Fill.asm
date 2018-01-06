@@ -13,42 +13,39 @@
 
 // Put your code here.
 
-(INFINITE_LOOP)
+(READ_KEYBOARD)
                 @i                
                 M=0              // i = 0
                 @KBD
                 D=M              // D = ASCII code at RAM[24576]
-                @NO_KEY_PRESSED
-                D;JEQ            // if (D == 0) goto NO_KEY_PRESSED
-(KEY_PRESSED)                    // blacken screen
+                @WHITEN_SCREEN
+                D;JEQ            // if (D == 0) goto WHITEN_SCREEN
+                @color
+                M=-1             // color = black
+(FILL_SCREEN)
                 @i                
                 D=M              // D = i
                 @8192
                 D=D-A            // D = i - 8192
-                @INFINITE_LOOP
+                @READ_KEYBOARD
                 D;JEQ            // if (i - 8192) == 0 goto INFINITE_LOOP
                 @SCREEN
                 D=A              // D = 16384
                 @i
-                A=D+M            // A = 16384 + i
-                M=-1             // RAM[A] = black
+                D=D+M            // D = 16384 + i
+                @pixel_address
+                M=D              // pixel_address = D
+                @color
+                D=M              // D = color
+                @pixel_address
+                A=M              // A = pixel_address
+                M=D              // RAM[A] = color
                 @i
                 M=M+1            // i = i + 1
-                @KEY_PRESSED
+                @FILL_SCREEN
                 0;JMP                
-(NO_KEY_PRESSED)                 // whiten screen
-                @i                
-                D=M              // D = i
-                @8192
-                D=D-A            // D = i - 8192
-                @INFINITE_LOOP
-                D;JEQ            // if (i - 8192) == 0 goto INFINITE_LOOP
-                @SCREEN
-                D=A              // D = 16384
-                @i
-                A=D+M            // A = 16384 + i
-                M=0              // RAM[A] = white
-                @i
-                M=M+1            // i = i + 1
-                @NO_KEY_PRESSED
-                0;JMP            
+(WHITEN_SCREEN)
+                @color
+                M=0              // color = white
+                @FILL_SCREEN
+                0;JMP
