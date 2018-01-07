@@ -32,7 +32,7 @@
                 M=D              // RAM[A] = color
                 @pixel_address
                 MD=M+1           // pixel_address, D = pixel_address + 1
-                @KBD             // = @SCREEN + (256 * 512) = 16384 + 8192 = 24576 
+                @KBD             // = @SCREEN + (256 * 32) = 16384 + 8192 = 24576 
                 D=D-A            // D = pixel_address - 24576
                 @READ_KEYBOARD
                 D;JEQ            // if (D == 0) goto READ_KEYBOARD
