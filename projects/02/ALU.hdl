@@ -64,16 +64,13 @@ CHIP ALU {
    Add16(a = xornx, b = yorny, out = xaddy);
    Mux16(a = xandy, b = xaddy, sel = f, out = xfy);
 
-   // if (no == 1) set out = !out
+   // if (no == 1) set out = !out; if (out < 0) set ng = 1
    Not16(in = xfy, out = notxfy);
-   Mux16(a = xfy, b = notxfy, sel = no, out[0..7] = out0to7, out[8..15] = out8to15, out[15] = out15, out = out);
+   Mux16(a = xfy, b = notxfy, sel = no, out[0..7] = out0to7, out[8..15] = out8to15, out[15] = ng, out = out);
 
    // if (out == 0) set zr = 1
    Or8Way(in = out0to7,  out = out0to7ored);
    Or8Way(in = out8to15, out = out8to15ored);
    Or(a = out0to7ored, b = out8to15ored, out = out0to15ored);
    Not(in = out0to15ored, out = zr);
-
-   // if (out < 0) set ng = 1
-   And(a = out15, b = true, out = ng);
 }
