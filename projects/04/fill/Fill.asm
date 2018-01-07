@@ -14,8 +14,10 @@
 // Put your code here.
 
 (READ_KEYBOARD)
-                @i                
-                M=0              // i = 0
+                @SCREEN
+                D=A              // D = 16384
+                @pixel_address   
+                M=D              // pixel_address = D
                 @KBD
                 D=M              // D = ASCII code at RAM[24576]
                 @WHITEN_SCREEN
@@ -23,25 +25,19 @@
                 @color
                 M=-1             // color = black
 (FILL_SCREEN)
-                @i                
-                D=M              // D = i
-                @8192
-                D=D-A            // D = i - 8192
+                @pixel_address                
+                D=M              // D = pixel_address
+                @KBD             // = @SCREEN + (256 * 512) = 16384 + 8192 = 24576 
+                D=D-A            // D = pixel_address - 24576
                 @READ_KEYBOARD
-                D;JEQ            // if (i - 8192) == 0 goto READ_KEYBOARD
-                @SCREEN
-                D=A              // D = 16384
-                @i
-                D=D+M            // D = 16384 + i
-                @pixel_address
-                M=D              // pixel_address = D
+                D;JEQ            // if (D == 0) goto READ_KEYBOARD
                 @color
                 D=M              // D = color
                 @pixel_address
                 A=M              // A = pixel_address
                 M=D              // RAM[A] = color
-                @i
-                M=M+1            // i = i + 1
+                @pixel_address
+                M=M+1            // pixel_address = pixel_address + 1
                 @FILL_SCREEN
                 0;JMP                
 (WHITEN_SCREEN)
