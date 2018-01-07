@@ -17,19 +17,9 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
-    
-    // if      (reset[t] == 1) out[t+1] = 0
-    Mux16(a = in, b = false, sel = reset, out = inorreset);
-    
-    // else if (load[t] == 1)  out[t+1] = in[t]
-    Or(a = reset, b = load, out = resetorload);
-    Mux16(a = storedvalue, b = inorreset, sel = resetorload, out = storedorloaded);
-    
-    // else if (inc[t] == 1)   out[t+1] = out[t] + 1  (integer addition)
-    // else                    out[t+1] = out[t]
-    Inc16(in = storedorloaded, out = inced);
-    Mux(a = inc, b = false, sel = resetorload, out = incit);
-    Mux16(a = storedorloaded, b = inced, sel = incit, out = valuetostore);
-    
-    Register(in = valuetostore, load = true, out = storedvalue, out = out);
+    Inc16(in = stored, out = incedStored);
+    Mux16(a = stored,                  b = incedStored, sel = inc,   out = storedOrIncedStored);
+    Mux16(a = storedOrIncedStored,     b = in,          sel = load,  out = storedOrIncedStoredOrIn);
+    Mux16(a = storedOrIncedStoredOrIn, b = false,       sel = reset, out = storedOrIncedStoredOrInOrReset);
+    Register(in = storedOrIncedStoredOrInOrReset, load = true, out = stored, out = out);
 }
