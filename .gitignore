@@ -3,4 +3,3 @@
 *.pdf
 **/*.out
 /HDL*
-/tools
