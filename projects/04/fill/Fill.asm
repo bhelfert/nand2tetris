@@ -25,21 +25,19 @@
                 @color
                 M=-1             // color = black
 (FILL_SCREEN)
-                @pixel_address                
-                D=M              // D = pixel_address
-                @KBD             // = @SCREEN + (256 * 512) = 16384 + 8192 = 24576 
-                D=D-A            // D = pixel_address - 24576
-                @READ_KEYBOARD
-                D;JEQ            // if (D == 0) goto READ_KEYBOARD
                 @color
                 D=M              // D = color
                 @pixel_address
                 A=M              // A = pixel_address
                 M=D              // RAM[A] = color
                 @pixel_address
-                M=M+1            // pixel_address = pixel_address + 1
+                MD=M+1           // pixel_address, D = pixel_address + 1
+                @KBD             // = @SCREEN + (256 * 512) = 16384 + 8192 = 24576 
+                D=D-A            // D = pixel_address - 24576
+                @READ_KEYBOARD
+                D;JEQ            // if (D == 0) goto READ_KEYBOARD
                 @FILL_SCREEN
-                0;JMP                
+                0;JMP            // else goto FILL_SCREEN
 (WHITEN_SCREEN)
                 @color
                 M=0              // color = white
