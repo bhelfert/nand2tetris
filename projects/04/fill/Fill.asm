@@ -15,31 +15,31 @@
 
 (READ_KEYBOARD)
                 @SCREEN
-                D=A              // D = 16384
+                D=A              // D = SCREEN memory map start address = 16384
                 @pixel_address   
-                M=D              // pixel_address = D
+                M=D              // pixel_address = @SCREEN
                 @KBD
-                D=M              // D = ASCII code at RAM[24576]
+                D=M              // D = ASCII code at KBD memory map (@24576)
                 @WHITEN_SCREEN
-                D;JEQ            // if (D == 0) goto WHITEN_SCREEN
-                @color
+                D;JEQ            // if none key is pressed (ASCII code 0) whiten screen
+                @color           // else: blacken screen
                 M=-1             // color = black
 (FILL_SCREEN)
                 @color
                 D=M              // D = color
                 @pixel_address
                 A=M              // A = pixel_address
-                M=D              // RAM[A] = color
+                M=D              // @pixel_address = color
                 @pixel_address
-                MD=M+1           // pixel_address, D = pixel_address + 1
+                MD=M+1           // increment pixel_address, store it also in D
                 @KBD             // = @SCREEN + (256 * 32) = 16384 + 8192 = 24576 
                 D=D-A            // D = pixel_address - 24576
                 @READ_KEYBOARD
-                D;JEQ            // if (D == 0) goto READ_KEYBOARD
+                D;JEQ            // if screen was completely filled read from keyboard again
                 @FILL_SCREEN
-                0;JMP            // else goto FILL_SCREEN
+                0;JMP            // else: continue filling screen
 (WHITEN_SCREEN)
                 @color
                 M=0              // color = white
                 @FILL_SCREEN
-                0;JMP
+                0;JMP            // fill screen with white
