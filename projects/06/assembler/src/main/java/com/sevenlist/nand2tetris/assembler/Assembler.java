@@ -124,28 +124,28 @@ public class Assembler {
     private String translateComputeInstruction(Parser parser) {
         Code code = new Code();
         StringBuilder machineCode = new StringBuilder(COMPUTE_INSTRUCTION_PREFIX);
-        machineCode.append(addressOrMemoryMachineCode(parser));
-        machineCode.append(compMachineCode(parser, code));
-        machineCode.append(destMachineCode(parser, code));
-        machineCode.append(jumpMachineCode(parser, code));
+        machineCode.append(machineCodeForAddressOrMemoryFlag(parser));
+        machineCode.append(machineCodeForComp(parser, code));
+        machineCode.append(machineCodeForDest(parser, code));
+        machineCode.append(machineCodeForJump(parser, code));
         machineCode.append(System.lineSeparator());
         return machineCode.toString();
     }
 
-    private String addressOrMemoryMachineCode(Parser parser) {
+    private String machineCodeForAddressOrMemoryFlag(Parser parser) {
         String comp = parser.comp();
         return ((comp != null) && comp.contains("M")) ? "1" : "0";
     }
 
-    private String compMachineCode(Parser parser, Code code) {
+    private String machineCodeForComp(Parser parser, Code code) {
         return code.comp(parser.comp());
     }
 
-    private String destMachineCode(Parser parser, Code code) {
+    private String machineCodeForDest(Parser parser, Code code) {
         return (parser.dest() != null) ? code.dest(parser.dest()) : "000";
     }
 
-    private String jumpMachineCode(Parser parser, Code code) {
+    private String machineCodeForJump(Parser parser, Code code) {
         return (parser.jump() != null) ? code.jump(parser.jump()) : "000";
     }
 
