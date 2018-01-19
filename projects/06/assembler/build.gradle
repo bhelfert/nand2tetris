@@ -11,6 +11,12 @@ dependencies {
     testCompile 'org.assertj:assertj-core:3.9.0'
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.sevenlist.nand2tetris.assembler.Assembler'
+    }
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '4.4.1'
 }
