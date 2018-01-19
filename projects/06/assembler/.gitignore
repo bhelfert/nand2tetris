@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+*.iml
+.gradle/
+build/
+out/
+src/test/resources/add/Add.hack
+src/test/resources/max/Max.hack
+src/test/resources/max/MaxL.hack
+src/test/resources/pong/Pong.hack
+src/test/resources/pong/PongL.hack
+src/test/resources/rect/Rect.hack
+src/test/resources/rect/RectL.hack
