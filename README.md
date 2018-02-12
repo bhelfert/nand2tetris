@@ -6,7 +6,7 @@ Kudos goes to all its [creators](http://www.nand2tetris.org/team.php) and especi
 
 Of course, the implementation of the project tasks you will find here are not the creators' solutions, but only mine ;).
 
-# Hardware Platform
+# Hardware Platform ("Hack")
 
 The [computer](https://github.com/sevenlist/nand2tetris/blob/master/projects/05/Computer.hdl) hardware is build from
 * [Logical Gates](https://github.com/sevenlist/nand2tetris/tree/master/projects/01)
@@ -21,3 +21,6 @@ All chips are implemented using this [Hardware Description Language](http://www.
 # Software Hierarchy
 
 * [Assembler](https://github.com/sevenlist/nand2tetris/tree/master/projects/06/assembler)
+* Virtual Machine Translator
+* Compiler (for the "Jack" programming language)
+* Operating System
