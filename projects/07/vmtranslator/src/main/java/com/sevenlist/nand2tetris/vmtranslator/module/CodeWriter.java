@@ -132,9 +132,9 @@ public class CodeWriter {
         });
     }
 
-    private void operateArithmetically(String comment, Runnable operations) {
+    private void operateArithmetically(String comment, Runnable instructions) {
         writeComment(comment);
-        operations.run();
+        instructions.run();
         incrementStackPointer();
         writeEmptyLine();
     }
