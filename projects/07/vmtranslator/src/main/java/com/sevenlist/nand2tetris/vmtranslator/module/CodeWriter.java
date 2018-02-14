@@ -20,7 +20,25 @@ public class CodeWriter {
     }
 
     public void writeArithmetic(ArithmeticCommand command) {
-        invokeParameterlessMethod(command.toString());
+        switch (command) {
+            case ADD:
+            case SUB:
+            case AND:
+            case OR:
+                addSubAndOr(command);
+                break;
+
+            case EQ:
+            case LT:
+            case GT:
+                eqLtGt(command);
+                break;
+
+            case NEG:
+            case NOT:
+                negNot(command);
+                break;
+        }
     }
 
     public void writePushPop(CommandType commandType, Segment segment, int index) {
@@ -48,47 +66,19 @@ public class CodeWriter {
         writeEmptyLine();
     }
 
-    private void add() {
-        addSubAndOr("add",  "+");
-    }
-
-    private void sub() {
-        addSubAndOr("sub", "-");
-    }
-
-    private void and() {
-        addSubAndOr("and", "&");
-    }
-
-    private void or() {
-        addSubAndOr("or", "|");
-    }
-
-    private void addSubAndOr(String command, String operator) {
-        writeComment(command);
+    private void addSubAndOr(ArithmeticCommand command) {
+        writeComment(command.toString());
         writeLine("@SP");
         writeLine("M=M-1");
         writeLine("A=M");
         writeLine("D=M");
         writeLine("A=A-1");
-        writeLine("M=M" + operator + "D");
+        writeLine("M=M" + command.operator() + "D");
         writeEmptyLine();
     }
 
-    private void eq() {
-        eqLtGt("eq");
-    }
-
-    private void lt() {
-        eqLtGt("lt");
-    }
-
-    private void gt() {
-        eqLtGt("gt");
-    }
-
-    private void eqLtGt(String command) {
-        writeComment(command);
+    private void eqLtGt(ArithmeticCommand command) {
+        writeComment(command.toString());
         writeLine("@SP");
         writeLine("M=M-1");
         writeLine("A=M");
@@ -97,7 +87,7 @@ public class CodeWriter {
         writeLine("D=M-D");
         String ifTrueLabel = createLabelString("IF_TRUE");
         writeLine("@" + ifTrueLabel);
-        writeLine("D;J" + command.toUpperCase());
+        writeLine("D;J" + command.name());
         writeLine("@SP");
         writeLine("A=M-1");
         writeLine("M=0");
@@ -112,19 +102,11 @@ public class CodeWriter {
         writeEmptyLine();
     }
 
-    private void neg() {
-        negNot("neg", "-");
-    }
-
-    private void not() {
-        negNot("not", "!");
-    }
-
-    private void negNot(String command, String operator) {
-        writeComment(command);
+    private void negNot(ArithmeticCommand command) {
+        writeComment(command.toString());
         writeLine("@SP");
         writeLine("A=M-1");
-        writeLine("M=" + operator + "M");
+        writeLine("M=" + command.operator() + "M");
         writeEmptyLine();
     }
 
@@ -148,15 +130,6 @@ public class CodeWriter {
 
     private void writeEmptyLine() {
         writeLine("");
-    }
-
-    private void invokeParameterlessMethod(String methodName) {
-        try {
-            CodeWriter.class.getDeclaredMethod(methodName, null).invoke(this, null);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Could not invoke method with name [" + methodName + "]", e);
-        }
     }
 
     private void invokeMethodWithIntParameter(String methodName, Integer value) {
