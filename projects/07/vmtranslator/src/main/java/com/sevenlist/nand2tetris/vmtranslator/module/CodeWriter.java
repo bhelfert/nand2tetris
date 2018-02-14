@@ -109,11 +109,7 @@ public class CodeWriter {
     }
 
     private void neg() {
-        operateArithmetically("neg", () -> {
-            decrementStackPointer();
-            dereferencePointer();
-            writeLine("M=-D");
-        });
+        negOrNor("neg", "-D");
     }
 
     private void and() {
@@ -125,11 +121,7 @@ public class CodeWriter {
     }
 
     private void not() {
-        operateArithmetically("not", () -> {
-            decrementStackPointer();
-            dereferencePointer();
-            writeLine("M=!D");
-        });
+        negOrNor("not", "!D");
     }
 
     private void operateArithmetically(String comment, Runnable instructions) {
@@ -169,6 +161,14 @@ public class CodeWriter {
 
     private String createLabelString(String labelName) {
         return labelName + "_" + labelCounter++;
+    }
+
+    private void negOrNor(String operation, String instruction) {
+        operateArithmetically(operation, () -> {
+            decrementStackPointer();
+            dereferencePointer();
+            writeLine("M=" + instruction);
+        });
     }
 
     private void andOrOr(String operation, String instruction) {
