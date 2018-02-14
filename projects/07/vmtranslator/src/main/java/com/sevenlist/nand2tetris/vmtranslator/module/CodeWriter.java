@@ -17,7 +17,6 @@ public class CodeWriter {
         catch (IOException e) {
             throw new RuntimeException("Could not write .asm file [" + asmFile.getPath() + "]", e);
         }
-        initializeStackPointer();
     }
 
     public void writeArithmetic(ArithmeticCommand command) {
@@ -37,27 +36,6 @@ public class CodeWriter {
         }
     }
 
-    private void initializeStackPointer() {
-        writeComment("SP = 256");
-        writeLine("@256");
-        writeLine("D=A");
-        writeLine("@SP");
-        writeLine("M=D");
-        writeEmptyLine();
-    }
-
-    private void incrementStackPointer() {
-        writeComment("SP += 1");
-        writeLine("@SP");
-        writeLine("M=M+1");
-    }
-
-    private void decrementStackPointer() {
-        writeComment("SP -= 1");
-        writeLine("@SP");
-        writeLine("M=M-1");
-    }
-
     private void pushConstant(int value) {
         writeComment("push constant " + value);
         writeLine("@" + value);
@@ -65,120 +43,97 @@ public class CodeWriter {
         writeLine("@SP");
         writeLine("A=M");
         writeLine("M=D");
-        incrementStackPointer();
+        writeLine("@SP");
+        writeLine("M=M+1");
         writeEmptyLine();
     }
 
     private void add() {
-        operateArithmetically("add", () -> {
-            decrementStackPointer();
-            dereferencePointer();
-            decrementStackPointer();
-            writeLine("A=M");
-            writeLine("M=D+M");
-        });
+        addSubAndOr("add",  "+");
     }
 
     private void sub() {
-        sub(true);
-    }
-
-    private void sub(boolean incrementStackPointer) {
-        writeComment("sub");
-        decrementStackPointer();
-        dereferencePointer();
-        decrementStackPointer();
-        writeLine("A=M");
-        writeLine("M=M-D");
-        if (incrementStackPointer) {
-            incrementStackPointer();
-            writeEmptyLine();
-        }
-    }
-
-    private void eq() {
-        compareWith("eq", "D;JEQ");
-    }
-
-    private void lt() {
-        compareWith("lt", "D;JLT");
-    }
-
-    private void gt() {
-        compareWith("gt", "D;JGT");
-    }
-
-    private void neg() {
-        negOrNor("neg", "-D");
+        addSubAndOr("sub", "-");
     }
 
     private void and() {
-        andOrOr("and", "D&M");
+        addSubAndOr("and", "&");
     }
 
     private void or() {
-        andOrOr("or", "D|M");
+        addSubAndOr("or", "|");
     }
 
-    private void not() {
-        negOrNor("not", "!D");
-    }
-
-    private void operateArithmetically(String comment, Runnable instructions) {
-        writeComment(comment);
-        instructions.run();
-        incrementStackPointer();
+    private void addSubAndOr(String command, String operator) {
+        writeComment(command);
+        writeLine("@SP");
+        writeLine("M=M-1");
+        writeLine("A=M");
+        writeLine("D=M");
+        writeLine("A=A-1");
+        writeLine("M=M" + operator + "D");
         writeEmptyLine();
     }
 
-    private void compareWith(String comparison, String jumpInstruction) {
-        writeComment(comparison);
-        sub(false);
+    private void eq() {
+        eqLtGt("eq");
+    }
+
+    private void lt() {
+        eqLtGt("lt");
+    }
+
+    private void gt() {
+        eqLtGt("gt");
+    }
+
+    private void eqLtGt(String command) {
+        writeComment(command);
         writeLine("@SP");
-        dereferencePointer();
+        writeLine("M=M-1");
+        writeLine("A=M");
+        writeLine("D=M");
+        writeLine("A=A-1");
+        writeLine("D=M-D");
         String ifTrueLabel = createLabelString("IF_TRUE");
         writeLine("@" + ifTrueLabel);
-        writeLine(jumpInstruction);
+        writeLine("D;J" + command.toUpperCase());
         writeLine("@SP");
-        writeLine("A=M");
+        writeLine("A=M-1");
         writeLine("M=0");
         String endIfLabel = createLabelString("END_IF");
         writeLine("@" + endIfLabel);
         writeLine("0;JMP");
         writeLine("(" + ifTrueLabel + ")");
         writeLine("@SP");
-        writeLine("A=M");
+        writeLine("A=M-1");
         writeLine("M=-1");
         writeLine("(" + endIfLabel + ")");
-        incrementStackPointer();
         writeEmptyLine();
     }
 
-    private void dereferencePointer() {
-        writeLine("A=M");
-        writeLine("D=M");
+    private void neg() {
+        negNot("neg", "-");
+    }
+
+    private void not() {
+        negNot("not", "!");
+    }
+
+    private void negNot(String command, String operator) {
+        writeComment(command);
+        writeLine("@SP");
+        writeLine("A=M-1");
+        writeLine("M=" + operator + "M");
+        writeEmptyLine();
     }
 
     private String createLabelString(String labelName) {
         return labelName + "_" + labelCounter++;
     }
 
-    private void negOrNor(String operation, String instruction) {
-        operateArithmetically(operation, () -> {
-            decrementStackPointer();
-            dereferencePointer();
-            writeLine("M=" + instruction);
-        });
-    }
-
-    private void andOrOr(String operation, String instruction) {
-        operateArithmetically(operation, () -> {
-            decrementStackPointer();
-            dereferencePointer();
-            decrementStackPointer();
-            writeLine("A=M");
-            writeLine("M=" + instruction);
-        });
+    private void writeComment(String comment) {
+        writeLine("// " + comment);
     }
 
     private void writeLine(String line) {
@@ -189,10 +144,6 @@ public class CodeWriter {
         catch (IOException e) {
             throw new RuntimeException("Could not write line [" + line + "] in .asm file", e);
         }
-    }
-
-    private void writeComment(String comment) {
-        writeLine("// " + comment);
     }
 
     private void writeEmptyLine() {
