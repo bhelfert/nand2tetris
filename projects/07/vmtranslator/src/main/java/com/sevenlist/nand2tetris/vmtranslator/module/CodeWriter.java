@@ -93,7 +93,6 @@ public class CodeWriter {
         writeLine("M=D");
         writeLine("@SP");
         writeLine("M=M+1");
-        writeEmptyLine();
     }
 
     private void pop(Segment segment, int index) {
@@ -115,18 +114,15 @@ public class CodeWriter {
             writeLine("A=M");
         }
         writeLine("M=D");
-        writeEmptyLine();
     }
 
     private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
         writeLine("@" + segment.baseAddress());
         writeLine("D=" + (segment.equals(TEMP) ? "A" : "M"));
+        writeLine("@" + index);
+        writeLine("D=A+D");
         writeLine("@R13");
         writeLine("M=D");
-        writeLine("@" + index);
-        writeLine("D=A");
-        writeLine("@R13");
-        writeLine("M=D+M");
     }
 
     private String createStaticAddress(int index) {
@@ -140,7 +136,6 @@ public class CodeWriter {
         writeLine("D=M");
         writeLine("A=A-1");
         writeLine("M=M" + command.operator() + "D");
-        writeEmptyLine();
     }
 
     private void eqLtGt(ArithmeticCommand command) {
@@ -164,7 +159,6 @@ public class CodeWriter {
         writeLine("A=M-1");
         writeLine("M=-1");
         writeLine("(" + endIfLabel + ")");
-        writeEmptyLine();
     }
 
     private void negNot(ArithmeticCommand command) {
@@ -172,7 +166,6 @@ public class CodeWriter {
         writeLine("@SP");
         writeLine("A=M-1");
         writeLine("M=" + command.operator() + "M");
-        writeEmptyLine();
     }
 
     private String createLabelString(String labelName) {
@@ -191,9 +184,5 @@ public class CodeWriter {
         catch (IOException e) {
             throw new RuntimeException("Could not write line [" + line + "] in .asm file", e);
         }
-    }
-
-    private void writeEmptyLine() {
-        writeLine("");
     }
 }
