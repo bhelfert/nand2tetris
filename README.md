@@ -21,6 +21,6 @@ All chips are implemented using this [Hardware Description Language](http://www.
 # Software Hierarchy
 
 * [Assembler](https://github.com/sevenlist/nand2tetris/tree/master/projects/06/assembler)
-* Virtual Machine Translator ([partial implementation](https://github.com/sevenlist/nand2tetris/tree/master/projects/07/vmtranslator) with support for Stack arithmetic, but not yet memory access, program flow, and function calls)
+* Virtual Machine Translator ([part 1](https://github.com/sevenlist/nand2tetris/tree/master/projects/07/vmtranslator) with support for Stack Arithmetic, but not yet Program Control)
 * Compiler (for the "Jack" programming language)
 * Operating System
