@@ -8,11 +8,11 @@ import static java.util.stream.Collectors.toMap;
 public enum Segment {
 
     CONSTANT("SP"),
-    LOCAL("R1"),
-    ARGUMENT("R2"),
+    LOCAL("LCL"),
+    ARGUMENT("ARG"),
     POINTER("R3"),
-    THIS("R3"),
-    THAT("R4"),
+    THIS("THIS"),
+    THAT("THAT"),
     TEMP("R5"),
     STATIC(null);
 
