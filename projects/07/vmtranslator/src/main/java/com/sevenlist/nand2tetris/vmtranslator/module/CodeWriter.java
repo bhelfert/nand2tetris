@@ -5,14 +5,18 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
+
 public class CodeWriter {
 
     private final BufferedWriter asmFileWriter;
+    private final String staticVariablePrefix;
     private int labelCounter = 0;
 
     public CodeWriter(File asmFile) {
         try {
             asmFileWriter = new BufferedWriter(new FileWriter(asmFile));
+            staticVariablePrefix = asmFile.getName().split("\\.")[0];
         }
         catch (IOException e) {
             throw new RuntimeException("Could not write .asm file [" + asmFile.getPath() + "]", e);
@@ -41,8 +45,16 @@ public class CodeWriter {
         }
     }
 
-    public void writePushPop(CommandType commandType, Segment segment, int index) {
-        invokeMethodWithIntParameter(commandType.toString() + segment.toStringCapitalized(), index);
+    public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {
+        switch (commandType) {
+            case PUSH:
+                push(segment, valueOrIndex);
+                break;
+
+            case POP:
+                pop(segment, valueOrIndex);
+                break;
+        }
     }
 
     public void close() {
@@ -54,10 +66,28 @@ public class CodeWriter {
         }
     }
 
-    private void pushConstant(int value) {
-        writeComment("push constant " + value);
-        writeLine("@" + value);
-        writeLine("D=A");
+    private void push(Segment segment, int valueOrIndex) {
+        writeComment("push " + segment + " " + valueOrIndex);
+        if (segment.equals(CONSTANT)) {
+            writeLine("@" + valueOrIndex);
+            writeLine("D=A");
+        }
+        else {
+            if (segment.equals(POINTER)) {
+                writeLine("@" + ((valueOrIndex == 1) ? "R4" : segment.baseAddress()));
+            }
+            else if (segment.equals(STATIC)) {
+                writeLine("@" + createStaticAddress(valueOrIndex));
+            }
+            else {
+                if (valueOrIndex > 0) {
+                    writeAddressOfSegmentIndexToR13(segment, valueOrIndex);
+                }
+                writeLine("@" + ((valueOrIndex > 0) ? "R13" : segment.baseAddress()));
+                writeLine("A=M");
+            }
+            writeLine("D=M");
+        }
         writeLine("@SP");
         writeLine("A=M");
         writeLine("M=D");
@@ -66,11 +96,47 @@ public class CodeWriter {
         writeEmptyLine();
     }
 
+    private void pop(Segment segment, int index) {
+        writeComment("pop " + segment.toString() + " " + index);
+        if (!segment.equals(POINTER) && !segment.equals(STATIC) && index > 0) {
+            writeAddressOfSegmentIndexToR13(segment, index);
+        }
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        if (segment.equals(POINTER)) {
+            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
+        }
+        else if (segment.equals(STATIC)) {
+            writeLine("@" + createStaticAddress(index));
+        }
+        else {
+            writeLine("@" + ((index > 0) ? "R13" : segment.baseAddress()));
+            writeLine("A=M");
+        }
+        writeLine("M=D");
+        writeEmptyLine();
+    }
+
+    private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
+        writeLine("@" + segment.baseAddress());
+        writeLine("D=" + (segment.equals(TEMP) ? "A" : "M"));
+        writeLine("@R13");
+        writeLine("M=D");
+        writeLine("@" + index);
+        writeLine("D=A");
+        writeLine("@R13");
+        writeLine("M=D+M");
+    }
+
+    private String createStaticAddress(int index) {
+        return staticVariablePrefix + "." + index;
+    }
+
     private void addSubAndOr(ArithmeticCommand command) {
         writeComment(command.toString());
         writeLine("@SP");
-        writeLine("M=M-1");
-        writeLine("A=M");
+        writeLine("AM=M-1");
         writeLine("D=M");
         writeLine("A=A-1");
         writeLine("M=M" + command.operator() + "D");
@@ -80,8 +146,7 @@ public class CodeWriter {
     private void eqLtGt(ArithmeticCommand command) {
         writeComment(command.toString());
         writeLine("@SP");
-        writeLine("M=M-1");
-        writeLine("A=M");
+        writeLine("AM=M-1");
         writeLine("D=M");
         writeLine("A=A-1");
         writeLine("D=M-D");
@@ -130,14 +195,5 @@ public class CodeWriter {
 
     private void writeEmptyLine() {
         writeLine("");
-    }
-
-    private void invokeMethodWithIntParameter(String methodName, Integer value) {
-        try {
-            CodeWriter.class.getDeclaredMethod(methodName, new Class[]{int.class}).invoke(this, value);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Could not invoke method with name [" + methodName + "]", e);
-        }
     }
 }

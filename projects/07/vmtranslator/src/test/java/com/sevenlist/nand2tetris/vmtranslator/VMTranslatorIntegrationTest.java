@@ -13,13 +13,28 @@ public class VMTranslatorIntegrationTest {
     private static final String SRC_TEST_RESOURCES_PATH = "src/test/resources/";
 
     @Test
-    public void translateSimpleAdd() {
+    public void simpleAdd() {
         translateAndTest("StackArithmetic/SimpleAdd/SimpleAdd");
     }
 
     @Test
-    public void translateStackTest() {
+    public void stackTest() {
         translateAndTest("StackArithmetic/StackTest/StackTest");
+    }
+
+    @Test
+    public void basicTest() {
+        translateAndTest("MemoryAccess/BasicTest/BasicTest");
+    }
+
+    @Test
+    public void pointerTest() {
+        translateAndTest("MemoryAccess/PointerTest/PointerTest");
+    }
+
+    @Test
+    public void staticTest() {
+        translateAndTest("MemoryAccess/StaticTest/StaticTest");
     }
 
     private void translateAndTest(String relativePathToFileWithoutExtension) {
