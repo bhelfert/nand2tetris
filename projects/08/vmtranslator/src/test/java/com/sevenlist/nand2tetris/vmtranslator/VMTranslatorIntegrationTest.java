@@ -14,31 +14,31 @@ public class VMTranslatorIntegrationTest {
 
     @Test
     public void simpleAdd() {
-        translateAndTest("StackArithmetic/SimpleAdd/SimpleAdd");
+        translateAndTest("StackArithmetic/SimpleAdd");
     }
 
     @Test
     public void stackTest() {
-        translateAndTest("StackArithmetic/StackTest/StackTest");
+        translateAndTest("StackArithmetic/StackTest");
     }
 
     @Test
     public void basicTest() {
-        translateAndTest("MemoryAccess/BasicTest/BasicTest");
+        translateAndTest("MemoryAccess/BasicTest");
     }
 
     @Test
     public void pointerTest() {
-        translateAndTest("MemoryAccess/PointerTest/PointerTest");
+        translateAndTest("MemoryAccess/PointerTest");
     }
 
     @Test
     public void staticTest() {
-        translateAndTest("MemoryAccess/StaticTest/StaticTest");
+        translateAndTest("MemoryAccess/StaticTest");
     }
 
-    private void translateAndTest(String relativePathToFileWithoutExtension) {
-        String fileNameWithoutExtension = SRC_TEST_RESOURCES_PATH + relativePathToFileWithoutExtension;
+    private void translateAndTest(String relativeDirectory) {
+        String fileNameWithoutExtension = SRC_TEST_RESOURCES_PATH + relativeDirectory + "/" + relativeDirectory.split("/")[1];
         translateVmFile(fileNameWithoutExtension);
         runTestScriptWithCpuEmulator(fileNameWithoutExtension);
     }
