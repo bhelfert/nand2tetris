@@ -38,9 +38,18 @@ public class Parser {
     }
 
     public CommandType commandType() {
+        if (currentCommand.contains("/")) {
+            currentCommand = currentCommand.split("/")[0];
+        }
         currentCommand = currentCommand.trim();
         if (ArithmeticCommand.fromString(currentCommand) != null) {
             return C_ARITHMETIC;
+        }
+        if (currentCommand.startsWith("if-goto")) {
+            return C_IF;
+        }
+        if (currentCommand.startsWith("label")) {
+            return C_LABEL;
         }
         if (currentCommand.startsWith("push")) {
             return C_PUSH;
@@ -51,14 +60,20 @@ public class Parser {
         return C_NONE;
     }
 
-    public Enum<?> arg1() {
+    public Object arg1() {
         switch (commandType()) {
             case C_ARITHMETIC:
                 return ArithmeticCommand.fromString(currentCommand);
 
+            case C_IF:
+                return firstArg();
+
+            case C_LABEL:
+                return firstArg();
+
             case C_PUSH:
             case C_POP:
-                return Segment.fromString(currentCommand.split(" ")[1]);
+                return Segment.fromString(firstArg());
         }
         throw new IllegalStateException("Method arg1() may only be called when context is right");
     }
@@ -68,6 +83,10 @@ public class Parser {
             throw new IllegalStateException("Method arg2() may only be called for push commands");
         }
         return Integer.valueOf(currentCommand.split(" ")[2]);
+    }
+
+    private String firstArg() {
+        return currentCommand.split(" ")[1];
     }
 
     private void closeVmCommandReader() {

@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
 
@@ -11,6 +13,7 @@ public class CodeWriter {
 
     private final BufferedWriter asmFileWriter;
     private final String staticVariablePrefix;
+    private Map<String, String> vmLabelNameToLabelString = new HashMap<>();
     private int labelCounter = 0;
 
     public CodeWriter(File asmFile) {
@@ -43,6 +46,22 @@ public class CodeWriter {
                 negNot(command);
                 break;
         }
+    }
+
+    public void writeIf(String labelName) {
+        writeComment("if-goto " + labelName);
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@" + vmLabelNameToLabelString.get(labelName));
+        writeLine("D;JNE");
+    }
+
+    public void writeLabel(String labelName) {
+        writeComment("label " + labelName);
+        String labelString = "null$" + labelName;
+        vmLabelNameToLabelString.put(labelName, labelString);
+        writeLine("(" + labelString + ")");
     }
 
     public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {

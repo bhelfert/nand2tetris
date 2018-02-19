@@ -37,6 +37,11 @@ public class VMTranslatorIntegrationTest {
         translateAndTest("MemoryAccess/StaticTest");
     }
 
+    @Test
+    public void basicLoop() {
+        translateAndTest("ProgramFlow/BasicLoop");
+    }
+
     private void translateAndTest(String relativeDirectory) {
         String fileNameWithoutExtension = SRC_TEST_RESOURCES_PATH + relativeDirectory + "/" + relativeDirectory.split("/")[1];
         translateVmFile(fileNameWithoutExtension);

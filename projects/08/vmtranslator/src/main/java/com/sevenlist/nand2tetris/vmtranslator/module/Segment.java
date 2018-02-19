@@ -18,7 +18,6 @@ public enum Segment {
 
     private static final Map<String, Segment> stringToEnum = Stream.of(values()).collect(toMap(Object::toString, e -> e));
 
-
     private final String baseAddress;
 
     Segment(String baseAddress) {

@@ -39,6 +39,14 @@ public class VMTranslator {
                         codeWriter.writeArithmetic((ArithmeticCommand) parser.arg1());
                         break;
 
+                    case C_IF:
+                        codeWriter.writeIf((String) parser.arg1());
+                        break;
+
+                    case C_LABEL:
+                        codeWriter.writeLabel((String) parser.arg1());
+                        break;
+
                     case C_POP:
                     case C_PUSH:
                         codeWriter.writePushPop(parser.commandType(), (Segment) parser.arg1(), parser.arg2());
