@@ -47,11 +47,11 @@ public class CodeWriter {
 
     public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {
         switch (commandType) {
-            case PUSH:
+            case C_PUSH:
                 push(segment, valueOrIndex);
                 break;
 
-            case POP:
+            case C_POP:
                 pop(segment, valueOrIndex);
                 break;
         }

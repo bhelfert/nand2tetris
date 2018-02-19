@@ -40,31 +40,31 @@ public class Parser {
     public CommandType commandType() {
         currentCommand = currentCommand.trim();
         if (ArithmeticCommand.fromString(currentCommand) != null) {
-            return ARITHMETIC;
+            return C_ARITHMETIC;
         }
         if (currentCommand.startsWith("push")) {
-            return PUSH;
+            return C_PUSH;
         }
         if (currentCommand.startsWith("pop")) {
-            return POP;
+            return C_POP;
         }
-        return NONE;
+        return C_NONE;
     }
 
     public Enum<?> arg1() {
         switch (commandType()) {
-            case ARITHMETIC:
+            case C_ARITHMETIC:
                 return ArithmeticCommand.fromString(currentCommand);
 
-            case PUSH:
-            case POP:
+            case C_PUSH:
+            case C_POP:
                 return Segment.fromString(currentCommand.split(" ")[1]);
         }
         throw new IllegalStateException("Method arg1() may only be called when context is right");
     }
 
     public int arg2() {
-        if (commandType().equals(ARITHMETIC)) {
+        if (commandType().equals(C_ARITHMETIC)) {
             throw new IllegalStateException("Method arg2() may only be called for push commands");
         }
         return Integer.valueOf(currentCommand.split(" ")[2]);

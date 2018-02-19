@@ -35,12 +35,12 @@ public class VMTranslator {
             while (parser.hasMoreCommands()) {
                 parser.advance();
                 switch (parser.commandType()) {
-                    case ARITHMETIC:
+                    case C_ARITHMETIC:
                         codeWriter.writeArithmetic((ArithmeticCommand) parser.arg1());
                         break;
 
-                    case POP:
-                    case PUSH:
+                    case C_POP:
+                    case C_PUSH:
                         codeWriter.writePushPop(parser.commandType(), (Segment) parser.arg1(), parser.arg2());
                         break;
                 }
