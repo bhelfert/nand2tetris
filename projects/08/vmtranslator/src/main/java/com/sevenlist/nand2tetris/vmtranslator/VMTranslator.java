@@ -39,6 +39,10 @@ public class VMTranslator {
                         codeWriter.writeArithmetic((ArithmeticCommand) parser.arg1());
                         break;
 
+                    case C_GOTO:
+                        codeWriter.writeGoto((String) parser.arg1());
+                        break;
+
                     case C_IF:
                         codeWriter.writeIf((String) parser.arg1());
                         break;

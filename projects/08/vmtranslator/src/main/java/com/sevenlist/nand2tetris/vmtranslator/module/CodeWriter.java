@@ -48,30 +48,34 @@ public class CodeWriter {
         }
     }
 
+    public void writeGoto(String labelName) {
+        writeComment("goto " + labelName);
+        writeLine("@" + getOrCreateVmLabelString(labelName));
+        writeLine("0;JMP");
+    }
+
     public void writeIf(String labelName) {
         writeComment("if-goto " + labelName);
         writeLine("@SP");
         writeLine("AM=M-1");
         writeLine("D=M");
-        writeLine("@" + vmLabelNameToLabelString.get(labelName));
+        writeLine("@" + getOrCreateVmLabelString(labelName));
         writeLine("D;JNE");
     }
 
     public void writeLabel(String labelName) {
         writeComment("label " + labelName);
-        String labelString = "null$" + labelName;
-        vmLabelNameToLabelString.put(labelName, labelString);
-        writeLine("(" + labelString + ")");
+        writeLine("(" + getOrCreateVmLabelString(labelName) + ")");
     }
 
     public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {
         switch (commandType) {
-            case C_PUSH:
-                push(segment, valueOrIndex);
-                break;
-
             case C_POP:
                 pop(segment, valueOrIndex);
+                break;
+
+            case C_PUSH:
+                push(segment, valueOrIndex);
                 break;
         }
     }
@@ -83,6 +87,35 @@ public class CodeWriter {
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getOrCreateVmLabelString(String labelName) {
+        if (!vmLabelNameToLabelString.containsKey(labelName)) {
+            String labelString = "null$" + labelName;
+            vmLabelNameToLabelString.put(labelName, labelString);
+        }
+        return vmLabelNameToLabelString.get(labelName);
+    }
+
+    private void pop(Segment segment, int index) {
+        writeComment("pop " + segment.toString() + " " + index);
+        if (!segment.equals(POINTER) && !segment.equals(STATIC) && index > 0) {
+            writeAddressOfSegmentIndexToR13(segment, index);
+        }
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        if (segment.equals(POINTER)) {
+            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
+        }
+        else if (segment.equals(STATIC)) {
+            writeLine("@" + createStaticAddress(index));
+        }
+        else {
+            writeLine("@" + ((index > 0) ? "R13" : segment.baseAddress()));
+            writeLine("A=M");
+        }
+        writeLine("M=D");
     }
 
     private void push(Segment segment, int valueOrIndex) {
@@ -112,27 +145,6 @@ public class CodeWriter {
         writeLine("M=D");
         writeLine("@SP");
         writeLine("M=M+1");
-    }
-
-    private void pop(Segment segment, int index) {
-        writeComment("pop " + segment.toString() + " " + index);
-        if (!segment.equals(POINTER) && !segment.equals(STATIC) && index > 0) {
-            writeAddressOfSegmentIndexToR13(segment, index);
-        }
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        if (segment.equals(POINTER)) {
-            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
-        }
-        else if (segment.equals(STATIC)) {
-            writeLine("@" + createStaticAddress(index));
-        }
-        else {
-            writeLine("@" + ((index > 0) ? "R13" : segment.baseAddress()));
-            writeLine("A=M");
-        }
-        writeLine("M=D");
     }
 
     private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
