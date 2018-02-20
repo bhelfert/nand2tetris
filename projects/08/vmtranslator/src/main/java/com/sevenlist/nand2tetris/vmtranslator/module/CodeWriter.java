@@ -75,7 +75,7 @@ public class CodeWriter {
 
     public void writeGoto(String labelName) {
         writeComment("goto " + labelName);
-        writeLine("@" + createVmLabelString(labelName));
+        writeLine("@" + createLabelStringWithFunctionName(labelName));
         writeLine("0;JMP");
     }
 
@@ -84,13 +84,13 @@ public class CodeWriter {
         writeLine("@SP");
         writeLine("AM=M-1");
         writeLine("D=M");
-        writeLine("@" + createVmLabelString(labelName));
+        writeLine("@" + createLabelStringWithFunctionName(labelName));
         writeLine("D;JNE");
     }
 
     public void writeLabel(String labelName) {
         writeComment("label " + labelName);
-        writeLine("(" + createVmLabelString(labelName) + ")");
+        writeLine("(" + createLabelStringWithFunctionName(labelName) + ")");
     }
 
     public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {
@@ -106,7 +106,6 @@ public class CodeWriter {
     }
 
     public void writeReturn() {
-        functionName = null;
         writeComment("return");
         restoreCallerStackPointer();
         storeTemporaryFrameVariable();
@@ -134,7 +133,7 @@ public class CodeWriter {
         writeLine("M=D");
     }
 
-    private String createVmLabelString(String labelName) {
+    private String createLabelStringWithFunctionName(String labelName) {
         return functionName + "$" + labelName;
     }
 
@@ -217,13 +216,13 @@ public class CodeWriter {
         writeLine("D=M");
         writeLine("A=A-1");
         writeLine("D=M-D");
-        String ifTrueLabel = createLabelString("IF_TRUE");
+        String ifTrueLabel = createLabelStringWithNumber("IF_TRUE");
         writeLine("@" + ifTrueLabel);
         writeLine("D;J" + command.name());
         writeLine("@SP");
         writeLine("A=M-1");
         writeLine("M=0");
-        String endIfLabel = createLabelString("END_IF");
+        String endIfLabel = createLabelStringWithNumber("END_IF");
         writeLine("@" + endIfLabel);
         writeLine("0;JMP");
         writeLine("(" + ifTrueLabel + ")");
@@ -240,12 +239,12 @@ public class CodeWriter {
         writeLine("M=" + command.operator() + "M");
     }
 
-    private String createLabelString(String labelName) {
+    private String createLabelStringWithNumber(String labelName) {
         return labelName + "_" + labelCounter++;
     }
 
     private String saveCallerReturnAddress() {
-        String returnLabel = createLabelString("RET");
+        String returnLabel = createLabelStringWithNumber("RET");
         writeComment("push " + returnLabel);
         writeLine("@" + returnLabel);
         writeLine("D=A");
@@ -330,6 +329,7 @@ public class CodeWriter {
         writeComment("goto RET = *(FRAME-5)");
         writeLine("@R13");
         writeLine("AM=M-1");
+        writeLine("A=M");
         writeLine("0;JMP");
     }
 

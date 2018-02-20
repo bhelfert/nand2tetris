@@ -10,9 +10,9 @@ public enum ArithmeticCommand {
     ADD("+"),
     SUB("-"),
     NEG("-"),
-    EQ(""),
-    GT(""),
-    LT(""),
+    EQ,
+    GT,
+    LT,
     AND("&"),
     OR("|"),
     NOT("!");
@@ -23,6 +23,10 @@ public enum ArithmeticCommand {
 
     public static ArithmeticCommand fromString(String segment) {
         return stringToEnum.get(segment);
+    }
+
+    ArithmeticCommand() {
+        this(null);
     }
 
     ArithmeticCommand(String operator) {
