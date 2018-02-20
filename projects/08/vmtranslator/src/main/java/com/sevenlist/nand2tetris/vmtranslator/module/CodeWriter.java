@@ -24,6 +24,11 @@ public class CodeWriter {
         }
     }
 
+    public void writeInit() {
+        initializeStackPointer();
+        writeCall("Sys.init", 0);
+    }
+
     public void writeArithmetic(ArithmeticCommand command) {
         switch (command) {
             case ADD:
@@ -44,6 +49,19 @@ public class CodeWriter {
                 negNot(command);
                 break;
         }
+    }
+
+    public void writeCall(String functionName, int numArgs) {
+        writeComment("call " + functionName + " " + numArgs);
+        String returnLabel = saveCallerReturnAddress();
+        saveCallerSegment(LOCAL);
+        saveCallerSegment(ARGUMENT);
+        saveCallerSegment(THIS);
+        saveCallerSegment(THAT);
+        repositionArgumentPointer(numArgs);
+        repositionLocalPointer();
+        gotoFunction(functionName);
+        writeLine("(" + returnLabel + ")");
     }
 
     public void writeFunction(String functionName, int numLocals) {
@@ -106,6 +124,14 @@ public class CodeWriter {
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void initializeStackPointer() {
+        writeComment("SP = 256");
+        writeLine("@256");
+        writeLine("D=A");
+        writeLine("@SP");
+        writeLine("M=D");
     }
 
     private String createVmLabelString(String labelName) {
@@ -216,6 +242,55 @@ public class CodeWriter {
 
     private String createLabelString(String labelName) {
         return labelName + "_" + labelCounter++;
+    }
+
+    private String saveCallerReturnAddress() {
+        String returnLabel = createLabelString("RET");
+        writeComment("push " + returnLabel);
+        writeLine("@" + returnLabel);
+        writeLine("D=A");
+        writeLine("@SP");
+        writeLine("A=M");
+        writeLine("M=D");
+        writeLine("@SP");
+        writeLine("M=M+1");
+        return returnLabel;
+    }
+
+    private void saveCallerSegment(Segment segment) {
+        writeComment("push " + segment.baseAddress());
+        writeLine("@" + segment.baseAddress());
+        writeLine("D=M");
+        writeLine("@SP");
+        writeLine("A=M");
+        writeLine("M=D");
+        writeLine("@SP");
+        writeLine("M=M+1");
+    }
+
+    private void repositionArgumentPointer(int numArgs) {
+        writeComment("ARG = SP-" + numArgs + "-5");
+        writeLine("@" + (numArgs + 5));
+        writeLine("D=A");
+        writeLine("@SP");
+        writeLine("A=M");
+        writeLine("D=A-D");
+        writeLine("@ARG");
+        writeLine("M=D");
+    }
+
+    private void repositionLocalPointer() {
+        writeComment("LCL = SP");
+        writeLine("@SP");
+        writeLine("D=M");
+        writeLine("@LCL");
+        writeLine("M=D");
+    }
+
+    private void gotoFunction(String functionName) {
+        writeComment("goto " + functionName);
+        writeLine("@" + functionName);
+        writeLine("0;JMP");
     }
 
     private void restoreCallerStackPointer() {

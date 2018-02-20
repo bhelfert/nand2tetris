@@ -52,9 +52,14 @@ public class VMTranslatorIntegrationTest {
         translateAndTest("FunctionCalls/SimpleFunction");
     }
 
+    @Test
+    public void fibonacciElement() {
+        translateAndTest("FunctionCalls/FibonacciElement");
+    }
+
     private void translateAndTest(String relativeDirectory) {
         String directory = SRC_TEST_RESOURCES_PATH + relativeDirectory;
-        translateVmFile(directory);
+        // translateVmFile(directory);
         String testFileName = directory + "/" + relativeDirectory.split("/")[1] + ".tst";
         runTestScriptWithCpuEmulator(testFileName);
     }

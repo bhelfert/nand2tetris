@@ -29,14 +29,22 @@ public class VMTranslator {
     }
 
     public void translate() {
-        for (File vmFile : getVmFiles()) {
+        CodeWriter codeWriter = new CodeWriter(getAsmFile());
+        List<File> vmFiles = getVmFiles();
+        if (vmFiles.size() > 1) {
+            codeWriter.writeInit();
+        }
+        for (File vmFile : vmFiles) {
             Parser parser = new Parser(vmFile);
-            CodeWriter codeWriter = new CodeWriter(getAsmFile());
             while (parser.hasMoreCommands()) {
                 parser.advance();
                 switch (parser.commandType()) {
                     case C_ARITHMETIC:
                         codeWriter.writeArithmetic((ArithmeticCommand) parser.arg1());
+                        break;
+
+                    case C_CALL:
+                        codeWriter.writeCall((String) parser.arg1(), parser.arg2());
                         break;
 
                     case C_FUNCTION:
@@ -65,8 +73,8 @@ public class VMTranslator {
                         break;
                 }
             }
-            codeWriter.close();
         }
+        codeWriter.close();
     }
 
     private List<File> getVmFiles() {
@@ -75,8 +83,8 @@ public class VMTranslator {
         }
 
         try (Stream<File> vmFileStream = Files.list(Paths.get(vmFileNameOrDirectoryName))
-                     .filter(p -> p.toString().endsWith(".vm"))
-                     .map(Path::toFile)) {
+                .filter(p -> p.toString().endsWith(".vm"))
+                .map(Path::toFile)) {
             return vmFileStream.collect(toList());
         }
         catch (IOException e) {

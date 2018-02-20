@@ -38,12 +38,18 @@ public class Parser {
     }
 
     public CommandType commandType() {
+        if (currentCommand.trim().startsWith("/")) {
+            return C_NONE;
+        }
         if (currentCommand.contains("/")) {
             currentCommand = currentCommand.split("/")[0];
         }
         currentCommand = currentCommand.trim();
         if (ArithmeticCommand.fromString(currentCommand) != null) {
             return C_ARITHMETIC;
+        }
+        if (currentCommand.startsWith("call")) {
+            return C_CALL;
         }
         if (currentCommand.startsWith("function")) {
             return C_FUNCTION;
@@ -74,6 +80,7 @@ public class Parser {
             case C_ARITHMETIC:
                 return ArithmeticCommand.fromString(currentCommand);
 
+            case C_CALL:
             case C_FUNCTION:
             case C_GOTO:
             case C_IF:
@@ -84,13 +91,10 @@ public class Parser {
             case C_PUSH:
                 return Segment.fromString(firstArg());
         }
-        throw new IllegalStateException("Method arg1() may only be called when context is right");
+        throw new RuntimeException("Unhandled command type: [" + commandType() + "]");
     }
 
     public int arg2() {
-        if (commandType().equals(C_ARITHMETIC)) {
-            throw new IllegalStateException("Method arg2() may only be called for push commands");
-        }
         return Integer.valueOf(currentCommand.split(" ")[2]);
     }
 

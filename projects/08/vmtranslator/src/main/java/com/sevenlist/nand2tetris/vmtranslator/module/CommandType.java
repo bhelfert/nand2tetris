@@ -3,6 +3,7 @@ package com.sevenlist.nand2tetris.vmtranslator.module;
 public enum CommandType {
 
     C_ARITHMETIC,
+    C_CALL,
     C_FUNCTION,
     C_GOTO,
     C_IF,
