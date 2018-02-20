@@ -53,17 +53,17 @@ public class VMTranslatorIntegrationTest {
     }
 
     private void translateAndTest(String relativeDirectory) {
-        String fileNameWithoutExtension = SRC_TEST_RESOURCES_PATH + relativeDirectory + "/" + relativeDirectory.split("/")[1];
-        translateVmFile(fileNameWithoutExtension);
-        runTestScriptWithCpuEmulator(fileNameWithoutExtension);
+        String directory = SRC_TEST_RESOURCES_PATH + relativeDirectory;
+        translateVmFile(directory);
+        String testFileName = directory + "/" + relativeDirectory.split("/")[1] + ".tst";
+        runTestScriptWithCpuEmulator(testFileName);
     }
 
-    private void translateVmFile(String fileNameWithoutExtension) {
-        new VMTranslator(new String[] { fileNameWithoutExtension + ".vm" } ).translate();
+    private void translateVmFile(String directoryName) {
+        new VMTranslator(new String[] { directoryName } ).translate();
     }
 
-    private void runTestScriptWithCpuEmulator(String fileNameWithoutExtension) {
-        String testFileName = fileNameWithoutExtension + ".tst";
+    private void runTestScriptWithCpuEmulator(String testFileName) {
         Process cpuEmulator = createCpuEmulatorProcess(testFileName);
         checkTestScriptResult(cpuEmulator, testFileName);
     }

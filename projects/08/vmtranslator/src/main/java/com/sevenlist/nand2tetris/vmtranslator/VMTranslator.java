@@ -31,7 +31,7 @@ public class VMTranslator {
     public void translate() {
         for (File vmFile : getVmFiles()) {
             Parser parser = new Parser(vmFile);
-            CodeWriter codeWriter = new CodeWriter(getAsmFile(vmFile));
+            CodeWriter codeWriter = new CodeWriter(getAsmFile());
             while (parser.hasMoreCommands()) {
                 parser.advance();
                 switch (parser.commandType()) {
@@ -84,7 +84,15 @@ public class VMTranslator {
         }
     }
 
-    private File getAsmFile(File vmFile) {
-        return new File(vmFile.getPath().replace(".vm", ".asm"));
+    private File getAsmFile() {
+        if (vmFileNameOrDirectoryName.endsWith(".vm")) {
+            return new File(vmFileNameOrDirectoryName.replace(".vm", ".asm"));
+        }
+
+        String fileSeparator = System.getProperty("file.separator");
+        int startIndexOfDeepestDirectory = vmFileNameOrDirectoryName.lastIndexOf(fileSeparator);
+        String deepestDirectoryName = vmFileNameOrDirectoryName.substring(startIndexOfDeepestDirectory);
+        String asmFileName = vmFileNameOrDirectoryName + fileSeparator + deepestDirectoryName + ".asm";
+        return new File(asmFileName);
     }
 }
