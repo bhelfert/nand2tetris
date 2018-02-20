@@ -118,33 +118,10 @@ public class CodeWriter {
         writeLine("@SP");
         writeLine("M=D+1");
 
-        writeComment("THAT = *(FRAME-1)");
-        writeLine("@R13");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@THAT");
-        writeLine("M=D");
-
-        writeComment("THIS = *(FRAME-2)");
-        writeLine("@R13");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@THIS");
-        writeLine("M=D");
-
-        writeComment("ARG = *(FRAME-3)");
-        writeLine("@R13");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@ARG");
-        writeLine("M=D");
-
-        writeComment("LCL = *(FRAME-4)");
-        writeLine("@R13");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@LCL");
-        writeLine("M=D");
+        restoreSegment(THAT, 1);
+        restoreSegment(THIS, 2);
+        restoreSegment(ARGUMENT, 3);
+        restoreSegment(LOCAL, 4);
 
         writeComment("goto RET");
         writeLine("@R14");
@@ -269,6 +246,15 @@ public class CodeWriter {
 
     private String createLabelString(String labelName) {
         return labelName + "_" + labelCounter++;
+    }
+
+    private void restoreSegment(Segment segment, int reverseOffset) {
+        writeComment(segment.baseAddress() + " = *(FRAME-" + reverseOffset + ")");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@" + segment.baseAddress());
+        writeLine("M=D");
     }
 
     private void writeComment(String comment) {
