@@ -10,18 +10,21 @@ import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
 public class CodeWriter {
 
     private final BufferedWriter asmFileWriter;
-    private final String staticVariablePrefix;
+    private String staticVariablePrefix;
     private int labelCounter = 0;
     private String functionName;
 
     public CodeWriter(File asmFile) {
         try {
             asmFileWriter = new BufferedWriter(new FileWriter(asmFile));
-            staticVariablePrefix = asmFile.getName().split("\\.")[0];
         }
         catch (IOException e) {
             throw new RuntimeException("Could not write .asm file [" + asmFile.getPath() + "]", e);
         }
+    }
+
+    public void setVmFileName(String vmFileName) {
+        staticVariablePrefix = vmFileName.substring(0, vmFileName.indexOf(".vm"));
     }
 
     public void writeInit() {
@@ -106,7 +109,7 @@ public class CodeWriter {
     }
 
     public void writeReturn() {
-        writeComment("return");
+        writeComment("return (from " + functionName + ")");
         restoreCallerStackPointer();
         storeTemporaryFrameVariable();
         restoreCallerSegment(THAT, 1);

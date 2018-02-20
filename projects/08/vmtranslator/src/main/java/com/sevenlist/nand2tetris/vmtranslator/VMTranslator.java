@@ -36,6 +36,7 @@ public class VMTranslator {
         }
         for (File vmFile : vmFiles) {
             Parser parser = new Parser(vmFile);
+            codeWriter.setVmFileName(vmFile.getName());
             while (parser.hasMoreCommands()) {
                 parser.advance();
                 switch (parser.commandType()) {
