@@ -4,8 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
 
@@ -13,8 +11,8 @@ public class CodeWriter {
 
     private final BufferedWriter asmFileWriter;
     private final String staticVariablePrefix;
-    private Map<String, String> vmLabelNameToLabelString = new HashMap<>();
     private int labelCounter = 0;
+    private String functionName;
 
     public CodeWriter(File asmFile) {
         try {
@@ -48,9 +46,18 @@ public class CodeWriter {
         }
     }
 
+    public void writeFunction(String functionName, int numLocals) {
+        this.functionName = functionName;
+        writeComment("function " + functionName + " " + numLocals);
+        writeLine("(" + functionName + ")");
+        for (int i = 0; i < numLocals; i++) {
+            push(CONSTANT, 0);
+        }
+    }
+
     public void writeGoto(String labelName) {
         writeComment("goto " + labelName);
-        writeLine("@" + getOrCreateVmLabelString(labelName));
+        writeLine("@" + createVmLabelString(labelName));
         writeLine("0;JMP");
     }
 
@@ -59,13 +66,13 @@ public class CodeWriter {
         writeLine("@SP");
         writeLine("AM=M-1");
         writeLine("D=M");
-        writeLine("@" + getOrCreateVmLabelString(labelName));
+        writeLine("@" + createVmLabelString(labelName));
         writeLine("D;JNE");
     }
 
     public void writeLabel(String labelName) {
         writeComment("label " + labelName);
-        writeLine("(" + getOrCreateVmLabelString(labelName) + ")");
+        writeLine("(" + createVmLabelString(labelName) + ")");
     }
 
     public void writePushPop(CommandType commandType, Segment segment, int valueOrIndex) {
@@ -80,6 +87,71 @@ public class CodeWriter {
         }
     }
 
+    public void writeReturn() {
+        functionName = null;
+        writeComment("return");
+
+        writeComment("FRAME = LCL");
+        writeLine("@LCL");
+        writeLine("D=M");
+        writeLine("@R13"); // FRAME
+        writeLine("M=D");
+
+        writeComment("RET = *(FRAME-5)");
+        writeLine("@5");
+        writeLine("A=D-A");
+        writeLine("D=M");
+        writeLine("@R14"); // RET
+        writeLine("M=D");
+
+        writeComment("*ARG = pop()");
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@ARG");
+        writeLine("A=M");
+        writeLine("M=D");
+
+        writeComment("SP = ARG+1");
+        writeLine("@ARG");
+        writeLine("D=M");
+        writeLine("@SP");
+        writeLine("M=D+1");
+
+        writeComment("THAT = *(FRAME-1)");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@THAT");
+        writeLine("M=D");
+
+        writeComment("THIS = *(FRAME-2)");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@THIS");
+        writeLine("M=D");
+
+        writeComment("ARG = *(FRAME-3)");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@ARG");
+        writeLine("M=D");
+
+        writeComment("LCL = *(FRAME-4)");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@LCL");
+        writeLine("M=D");
+
+        writeComment("goto RET");
+        writeLine("@R14");
+        writeLine("A=M");
+        writeLine("0;JMP");
+    }
+
     public void close() {
         try {
             asmFileWriter.close();
@@ -89,12 +161,8 @@ public class CodeWriter {
         }
     }
 
-    private String getOrCreateVmLabelString(String labelName) {
-        if (!vmLabelNameToLabelString.containsKey(labelName)) {
-            String labelString = "null$" + labelName;
-            vmLabelNameToLabelString.put(labelName, labelString);
-        }
-        return vmLabelNameToLabelString.get(labelName);
+    private String createVmLabelString(String labelName) {
+        return functionName + "$" + labelName;
     }
 
     private void pop(Segment segment, int index) {

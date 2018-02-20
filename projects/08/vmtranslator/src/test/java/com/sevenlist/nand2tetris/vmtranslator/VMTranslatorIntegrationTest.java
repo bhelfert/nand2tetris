@@ -47,6 +47,11 @@ public class VMTranslatorIntegrationTest {
         translateAndTest("ProgramFlow/FibonacciSeries");
     }
 
+    @Test
+    public void simpleFunction() {
+        translateAndTest("FunctionCalls/SimpleFunction");
+    }
+
     private void translateAndTest(String relativeDirectory) {
         String fileNameWithoutExtension = SRC_TEST_RESOURCES_PATH + relativeDirectory + "/" + relativeDirectory.split("/")[1];
         translateVmFile(fileNameWithoutExtension);

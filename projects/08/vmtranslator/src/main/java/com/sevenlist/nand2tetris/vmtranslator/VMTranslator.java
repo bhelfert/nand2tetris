@@ -39,6 +39,10 @@ public class VMTranslator {
                         codeWriter.writeArithmetic((ArithmeticCommand) parser.arg1());
                         break;
 
+                    case C_FUNCTION:
+                        codeWriter.writeFunction((String) parser.arg1(), parser.arg2());
+                        break;
+
                     case C_GOTO:
                         codeWriter.writeGoto((String) parser.arg1());
                         break;
@@ -54,6 +58,10 @@ public class VMTranslator {
                     case C_POP:
                     case C_PUSH:
                         codeWriter.writePushPop(parser.commandType(), (Segment) parser.arg1(), parser.arg2());
+                        break;
+
+                    case C_RETURN:
+                        codeWriter.writeReturn();
                         break;
                 }
             }

@@ -45,6 +45,9 @@ public class Parser {
         if (ArithmeticCommand.fromString(currentCommand) != null) {
             return C_ARITHMETIC;
         }
+        if (currentCommand.startsWith("function")) {
+            return C_FUNCTION;
+        }
         if (currentCommand.startsWith("goto")) {
             return C_GOTO;
         }
@@ -60,6 +63,9 @@ public class Parser {
         if (currentCommand.startsWith("push")) {
             return C_PUSH;
         }
+        if (currentCommand.equals("return")) {
+            return C_RETURN;
+        }
         return C_NONE;
     }
 
@@ -68,12 +74,9 @@ public class Parser {
             case C_ARITHMETIC:
                 return ArithmeticCommand.fromString(currentCommand);
 
+            case C_FUNCTION:
             case C_GOTO:
-                return firstArg();
-
             case C_IF:
-                return firstArg();
-
             case C_LABEL:
                 return firstArg();
 
