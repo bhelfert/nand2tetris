@@ -90,43 +90,13 @@ public class CodeWriter {
     public void writeReturn() {
         functionName = null;
         writeComment("return");
-
-        writeComment("FRAME = LCL");
-        writeLine("@LCL");
-        writeLine("D=M");
-        writeLine("@R13"); // FRAME
-        writeLine("M=D");
-
-        writeComment("RET = *(FRAME-5)");
-        writeLine("@5");
-        writeLine("A=D-A");
-        writeLine("D=M");
-        writeLine("@R14"); // RET
-        writeLine("M=D");
-
-        writeComment("*ARG = pop()");
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@ARG");
-        writeLine("A=M");
-        writeLine("M=D");
-
-        writeComment("SP = ARG+1");
-        writeLine("@ARG");
-        writeLine("D=M");
-        writeLine("@SP");
-        writeLine("M=D+1");
-
-        restoreSegment(THAT, 1);
-        restoreSegment(THIS, 2);
-        restoreSegment(ARGUMENT, 3);
-        restoreSegment(LOCAL, 4);
-
-        writeComment("goto RET");
-        writeLine("@R14");
-        writeLine("A=M");
-        writeLine("0;JMP");
+        restoreCallerStackPointer();
+        storeTemporaryFrameVariable();
+        restoreCallerSegment(THAT, 1);
+        restoreCallerSegment(THIS, 2);
+        restoreCallerSegment(ARGUMENT, 3);
+        restoreCallerSegment(LOCAL, 4);
+        gotoReturnAddress();
     }
 
     public void close() {
@@ -248,13 +218,44 @@ public class CodeWriter {
         return labelName + "_" + labelCounter++;
     }
 
-    private void restoreSegment(Segment segment, int reverseOffset) {
+    private void restoreCallerStackPointer() {
+        writeComment("*ARG = pop()");
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        writeLine("@ARG");
+        writeLine("A=M");
+        writeLine("M=D");
+
+        writeComment("SP = ARG+1");
+        writeLine("@ARG");
+        writeLine("D=M");
+        writeLine("@SP");
+        writeLine("M=D+1");
+    }
+
+    private void storeTemporaryFrameVariable() {
+        writeComment("FRAME = LCL");
+        writeLine("@LCL");
+        writeLine("D=M");
+        writeLine("@R13"); // FRAME
+        writeLine("M=D");
+    }
+
+    private void restoreCallerSegment(Segment segment, int reverseOffset) {
         writeComment(segment.baseAddress() + " = *(FRAME-" + reverseOffset + ")");
         writeLine("@R13");
         writeLine("AM=M-1");
         writeLine("D=M");
         writeLine("@" + segment.baseAddress());
         writeLine("M=D");
+    }
+
+    private void gotoReturnAddress() {
+        writeComment("goto RET = *(FRAME-5)");
+        writeLine("@R13");
+        writeLine("AM=M-1");
+        writeLine("0;JMP");
     }
 
     private void writeComment(String comment) {
