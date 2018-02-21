@@ -85,7 +85,8 @@ public class VMTranslator {
 
         try (Stream<File> vmFileStream = Files.list(Paths.get(vmFileNameOrDirectoryName))
                 .filter(p -> p.toString().endsWith(".vm"))
-                .map(Path::toFile)) {
+                .map(Path::toFile)
+                .sorted()) {
             return vmFileStream.collect(toList());
         }
         catch (IOException e) {

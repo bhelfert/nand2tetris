@@ -57,6 +57,11 @@ public class VMTranslatorIntegrationTest {
         translateAndTest("FunctionCalls/FibonacciElement");
     }
 
+    @Test
+    public void staticsTest() {
+        translateAndTest("FunctionCalls/StaticsTest");
+    }
+
     private void translateAndTest(String relativeDirectory) {
         String directory = SRC_TEST_RESOURCES_PATH + relativeDirectory;
         translateVmFile(directory);

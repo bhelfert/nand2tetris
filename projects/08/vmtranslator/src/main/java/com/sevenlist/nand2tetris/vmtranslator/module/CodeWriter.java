@@ -110,8 +110,9 @@ public class CodeWriter {
 
     public void writeReturn() {
         writeComment("return (from " + functionName + ")");
-        restoreCallerStackPointer();
         storeTemporaryFrameVariable();
+        storeReturnAddress();
+        restoreCallerStackPointer();
         restoreCallerSegment(THAT, 1);
         restoreCallerSegment(THIS, 2);
         restoreCallerSegment(ARGUMENT, 3);
@@ -134,73 +135,6 @@ public class CodeWriter {
         writeLine("D=A");
         writeLine("@SP");
         writeLine("M=D");
-    }
-
-    private String createLabelStringWithFunctionName(String labelName) {
-        return functionName + "$" + labelName;
-    }
-
-    private void pop(Segment segment, int index) {
-        writeComment("pop " + segment.toString() + " " + index);
-        if (!segment.equals(POINTER) && !segment.equals(STATIC) && index > 0) {
-            writeAddressOfSegmentIndexToR13(segment, index);
-        }
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        if (segment.equals(POINTER)) {
-            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
-        }
-        else if (segment.equals(STATIC)) {
-            writeLine("@" + createStaticAddress(index));
-        }
-        else {
-            writeLine("@" + ((index > 0) ? "R13" : segment.baseAddress()));
-            writeLine("A=M");
-        }
-        writeLine("M=D");
-    }
-
-    private void push(Segment segment, int valueOrIndex) {
-        writeComment("push " + segment + " " + valueOrIndex);
-        if (segment.equals(CONSTANT)) {
-            writeLine("@" + valueOrIndex);
-            writeLine("D=A");
-        }
-        else {
-            if (segment.equals(POINTER)) {
-                writeLine("@" + ((valueOrIndex == 1) ? "R4" : segment.baseAddress()));
-            }
-            else if (segment.equals(STATIC)) {
-                writeLine("@" + createStaticAddress(valueOrIndex));
-            }
-            else {
-                if (valueOrIndex > 0) {
-                    writeAddressOfSegmentIndexToR13(segment, valueOrIndex);
-                }
-                writeLine("@" + ((valueOrIndex > 0) ? "R13" : segment.baseAddress()));
-                writeLine("A=M");
-            }
-            writeLine("D=M");
-        }
-        writeLine("@SP");
-        writeLine("A=M");
-        writeLine("M=D");
-        writeLine("@SP");
-        writeLine("M=M+1");
-    }
-
-    private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
-        writeLine("@" + segment.baseAddress());
-        writeLine("D=" + (segment.equals(TEMP) ? "A" : "M"));
-        writeLine("@" + index);
-        writeLine("D=A+D");
-        writeLine("@R13");
-        writeLine("M=D");
-    }
-
-    private String createStaticAddress(int index) {
-        return staticVariablePrefix + "." + index;
     }
 
     private void addSubAndOr(ArithmeticCommand command) {
@@ -295,6 +229,99 @@ public class CodeWriter {
         writeLine("0;JMP");
     }
 
+    private void push(Segment segment, int valueOrIndex) {
+        writeComment("push " + segment + " " + valueOrIndex);
+        if (segment.equals(CONSTANT)) {
+            writeLine("@" + valueOrIndex);
+            writeLine("D=A");
+        }
+        else {
+            if (segment.equals(POINTER)) {
+                writeLine("@" + ((valueOrIndex == 1) ? "R4" : segment.baseAddress()));
+            }
+            else if (segment.equals(STATIC)) {
+                writeLine("@" + createStaticAddress(valueOrIndex));
+            }
+            else {
+                if (valueOrIndex > 0) {
+                    writeAddressOfSegmentIndexToR13(segment, valueOrIndex);
+                }
+                writeLine("@" + ((valueOrIndex > 0) ? "R13" : segment.baseAddress()));
+                writeLine("A=M");
+            }
+            writeLine("D=M");
+        }
+        writeLine("@SP");
+        writeLine("A=M");
+        writeLine("M=D");
+        writeLine("@SP");
+        writeLine("M=M+1");
+    }
+
+    private String createStaticAddress(int index) {
+        return staticVariablePrefix + "." + index;
+    }
+
+    private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
+        if (segment.equals(TEMP)) {
+            writeLine("@" + (5 + index));
+            writeLine("D=A");
+        }
+        else {
+            writeLine("@" + segment.baseAddress());
+            writeLine("D=M");
+            if (index > 0) {
+                writeLine("@" + index);
+                writeLine("D=A+D");
+            }
+        }
+        writeLine("@R13");
+        writeLine("M=D");
+    }
+
+    private String createLabelStringWithFunctionName(String labelName) {
+        return functionName + "$" + labelName;
+    }
+
+
+    private void pop(Segment segment, int index) {
+        writeComment("pop " + segment.toString() + " " + index);
+        if (!segment.equals(POINTER) && !segment.equals(STATIC)) {
+            writeAddressOfSegmentIndexToR13(segment, index);
+        }
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        if (segment.equals(POINTER)) {
+            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
+        }
+        else if (segment.equals(STATIC)) {
+            writeLine("@" + createStaticAddress(index));
+        }
+        else {
+            writeLine("@R13");
+            writeLine("A=M");
+        }
+        writeLine("M=D");
+    }
+
+    private void storeTemporaryFrameVariable() {
+        writeComment("FRAME = LCL");
+        writeLine("@LCL");
+        writeLine("D=M");
+        writeLine("@R13"); // FRAME
+        writeLine("M=D");
+    }
+
+    private void storeReturnAddress() {
+        writeComment("RET = *(FRAME-5)");
+        writeLine("@5");
+        writeLine("A=D-A");
+        writeLine("D=M");
+        writeLine("@R14");
+        writeLine("M=D");
+    }
+
     private void restoreCallerStackPointer() {
         writeComment("*ARG = pop()");
         writeLine("@SP");
@@ -311,14 +338,6 @@ public class CodeWriter {
         writeLine("M=D+1");
     }
 
-    private void storeTemporaryFrameVariable() {
-        writeComment("FRAME = LCL");
-        writeLine("@LCL");
-        writeLine("D=M");
-        writeLine("@R13"); // FRAME
-        writeLine("M=D");
-    }
-
     private void restoreCallerSegment(Segment segment, int reverseOffset) {
         writeComment(segment.baseAddress() + " = *(FRAME-" + reverseOffset + ")");
         writeLine("@R13");
@@ -329,9 +348,8 @@ public class CodeWriter {
     }
 
     private void gotoReturnAddress() {
-        writeComment("goto RET = *(FRAME-5)");
-        writeLine("@R13");
-        writeLine("AM=M-1");
+        writeComment("goto RET");
+        writeLine("@R14");
         writeLine("A=M");
         writeLine("0;JMP");
     }
