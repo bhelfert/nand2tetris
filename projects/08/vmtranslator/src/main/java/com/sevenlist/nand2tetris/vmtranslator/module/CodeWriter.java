@@ -283,7 +283,6 @@ public class CodeWriter {
         return functionName + "$" + labelName;
     }
 
-
     private void pop(Segment segment, int index) {
         writeComment("pop " + segment.toString() + " " + index);
         if (!segment.equals(POINTER) && !segment.equals(STATIC)) {
