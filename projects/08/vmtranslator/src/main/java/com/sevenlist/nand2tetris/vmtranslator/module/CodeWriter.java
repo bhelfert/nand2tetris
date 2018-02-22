@@ -281,9 +281,11 @@ public class CodeWriter {
 
     private void pop(Segment segment, int index) {
         writeComment("pop " + segment.toString() + " " + index);
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
+        if (!((segment.equals(LOCAL) || segment.equals(ARGUMENT) || segment.equals(THIS) || segment.equals(THAT)) && (index > 0))) {
+            writeLine("@SP");
+            writeLine("AM=M-1");
+            writeLine("D=M");
+        }
         switch (segment) {
             case LOCAL:
             case ARGUMENT:
@@ -297,7 +299,7 @@ public class CodeWriter {
                     writeLine("@R13");
                     writeLine("M=D");
                     writeLine("@SP");
-                    writeLine("A=M");
+                    writeLine("AM=M-1");
                     writeLine("D=M");
                     writeLine("@R13");
                 }
