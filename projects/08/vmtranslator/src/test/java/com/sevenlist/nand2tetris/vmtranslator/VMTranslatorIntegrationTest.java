@@ -53,6 +53,11 @@ public class VMTranslatorIntegrationTest {
     }
 
     @Test
+    public void nestedCall() {
+        translateAndTest("FunctionCalls/NestedCall");
+    }
+
+    @Test
     public void fibonacciElement() {
         translateAndTest("FunctionCalls/FibonacciElement");
     }
