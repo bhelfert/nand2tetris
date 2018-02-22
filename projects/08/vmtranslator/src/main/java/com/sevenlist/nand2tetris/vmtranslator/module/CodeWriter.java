@@ -290,10 +290,7 @@ public class CodeWriter {
             case THIS:
             case THAT:
                 writeLine("@" + segment.baseAddress());
-                if (index == 0) {
-                    writeLine("A=M");
-                }
-                else {
+                if (index > 0) {
                     writeLine("D=M");
                     writeLine("@" + index);
                     writeLine("D=A+D");
@@ -303,8 +300,8 @@ public class CodeWriter {
                     writeLine("A=M");
                     writeLine("D=M");
                     writeLine("@R13");
-                    writeLine("A=M");
                 }
+                writeLine("A=M");
                 break;
 
             case POINTER:
