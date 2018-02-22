@@ -3,4 +3,8 @@ projects/02/* linguist-vendored
 projects/03/* linguist-vendored
 projects/04/* linguist-vendored
 projects/05/* linguist-vendored
+projects/06/add/* linguist-vendored
+projects/06/max/* linguist-vendored
+projects/06/pong/* linguist-vendored
+projects/06/rect/* linguist-vendored
 tools/* linguist-vendored
