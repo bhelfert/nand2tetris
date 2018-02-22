@@ -112,6 +112,7 @@ public class CodeWriter {
         writeComment("return (from " + functionName + ")");
         storeTemporaryFrameVariable();
         storeReturnAddress();
+        repositionReturnValueForCaller();
         restoreCallerStackPointer();
         restoreCallerSegment(THAT, 1);
         restoreCallerSegment(THIS, 2);
@@ -338,9 +339,11 @@ public class CodeWriter {
         writeLine("M=D");
     }
 
-    private void restoreCallerStackPointer() {
+    private void repositionReturnValueForCaller() {
         pop(ARGUMENT, 0);
+    }
 
+    private void restoreCallerStackPointer() {
         writeComment("SP = ARG+1");
         writeLine("@ARG");
         writeLine("D=M");
