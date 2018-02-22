@@ -339,13 +339,7 @@ public class CodeWriter {
     }
 
     private void restoreCallerStackPointer() {
-        writeComment("*ARG = pop()");
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        writeLine("@ARG");
-        writeLine("A=M");
-        writeLine("M=D");
+        pop(ARGUMENT, 0);
 
         writeComment("SP = ARG+1");
         writeLine("@ARG");
