@@ -41,5 +41,4 @@ public enum ArithmeticCommand {
     public String toString() {
         return name().toLowerCase();
     }
-
 }
