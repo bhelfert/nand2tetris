@@ -231,26 +231,40 @@ public class CodeWriter {
 
     private void push(Segment segment, int valueOrIndex) {
         writeComment("push " + segment + " " + valueOrIndex);
-        if (segment.equals(CONSTANT)) {
-            writeLine("@" + valueOrIndex);
-            writeLine("D=A");
-        }
-        else {
-            if (segment.equals(POINTER)) {
-                writeLine("@" + ((valueOrIndex == 1) ? "R4" : segment.baseAddress()));
-            }
-            else if (segment.equals(STATIC)) {
-                writeLine("@" + createStaticAddress(valueOrIndex));
-            }
-            else {
-                if (valueOrIndex > 0) {
-                    writeAddressOfSegmentIndexToR13(segment, valueOrIndex);
+        switch (segment) {
+            case CONSTANT:
+                writeLine("@" + valueOrIndex);
+                break;
+
+            case LOCAL:
+            case ARGUMENT:
+            case THIS:
+            case THAT:
+                writeLine("@" + segment.baseAddress());
+                if (valueOrIndex == 0) {
+                    writeLine("A=M");
                 }
-                writeLine("@" + ((valueOrIndex > 0) ? "R13" : segment.baseAddress()));
-                writeLine("A=M");
-            }
-            writeLine("D=M");
+                else {
+                    writeLine("D=M");
+                    writeLine("@" + valueOrIndex);
+                    writeLine("A=A+D");
+                }
+                break;
+
+            case POINTER:
+                writeLine("@R" + ((valueOrIndex == 0) ? "3" : "4"));
+                break;
+
+            case TEMP:
+                writeLine("@" + (5 + valueOrIndex));
+                break;
+
+            case STATIC:
+                writeLine("@" + createStaticAddress(valueOrIndex));
+                break;
         }
+
+        writeLine("D=" + (segment.equals(CONSTANT) ? "A" : "M"));
         writeLine("@SP");
         writeLine("A=M");
         writeLine("M=D");
@@ -258,8 +272,43 @@ public class CodeWriter {
         writeLine("M=M+1");
     }
 
-    private String createStaticAddress(int index) {
-        return staticVariablePrefix + "." + index;
+    private String createStaticAddress(int value) {
+        return staticVariablePrefix + "." + value;
+    }
+
+    private String createLabelStringWithFunctionName(String labelName) {
+        return functionName + "$" + labelName;
+    }
+
+    private void pop(Segment segment, int index) {
+        if ((segment.equals(LOCAL) || segment.equals(ARGUMENT)) && index == 0) {
+            writeLine("@SP");
+            writeLine("AM=M-1");
+            writeLine("D=M");
+            writeLine("@" + segment.baseAddress());
+            writeLine("A=M");
+            writeLine("M=D");
+        }
+        else {
+            writeComment("pop " + segment.toString() + " " + index);
+            if (!segment.equals(POINTER) && !segment.equals(STATIC)) {
+                writeAddressOfSegmentIndexToR13(segment, index);
+            }
+            writeLine("@SP");
+            writeLine("AM=M-1");
+            writeLine("D=M");
+            if (segment.equals(POINTER)) {
+                writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
+            }
+            else if (segment.equals(STATIC)) {
+                writeLine("@" + createStaticAddress(index));
+            }
+            else {
+                writeLine("@R13");
+                writeLine("A=M");
+            }
+            writeLine("M=D");
+        }
     }
 
     private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
@@ -276,31 +325,6 @@ public class CodeWriter {
             }
         }
         writeLine("@R13");
-        writeLine("M=D");
-    }
-
-    private String createLabelStringWithFunctionName(String labelName) {
-        return functionName + "$" + labelName;
-    }
-
-    private void pop(Segment segment, int index) {
-        writeComment("pop " + segment.toString() + " " + index);
-        if (!segment.equals(POINTER) && !segment.equals(STATIC)) {
-            writeAddressOfSegmentIndexToR13(segment, index);
-        }
-        writeLine("@SP");
-        writeLine("AM=M-1");
-        writeLine("D=M");
-        if (segment.equals(POINTER)) {
-            writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
-        }
-        else if (segment.equals(STATIC)) {
-            writeLine("@" + createStaticAddress(index));
-        }
-        else {
-            writeLine("@R13");
-            writeLine("A=M");
-        }
         writeLine("M=D");
     }
 
