@@ -7,4 +7,5 @@ projects/06/add/* linguist-vendored
 projects/06/max/* linguist-vendored
 projects/06/pong/* linguist-vendored
 projects/06/rect/* linguist-vendored
+projects/06/assembler/src/test/resources/**/* linguist-vendored
 tools/* linguist-vendored
