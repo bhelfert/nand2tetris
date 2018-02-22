@@ -31,7 +31,7 @@ public class VMTranslator {
     public void translate() {
         CodeWriter codeWriter = new CodeWriter(getAsmFile());
         List<File> vmFiles = getVmFiles();
-        if (vmFiles.size() > 1) {
+        if (containsSysVmFile(vmFiles)) {
             codeWriter.writeInit();
         }
         for (File vmFile : vmFiles) {
@@ -78,6 +78,18 @@ public class VMTranslator {
         codeWriter.close();
     }
 
+    private File getAsmFile() {
+        if (vmFileNameOrDirectoryName.endsWith(".vm")) {
+            return new File(vmFileNameOrDirectoryName.replace(".vm", ".asm"));
+        }
+
+        String fileSeparator = System.getProperty("file.separator");
+        int startIndexOfDeepestDirectory = vmFileNameOrDirectoryName.lastIndexOf(fileSeparator);
+        String deepestDirectoryName = vmFileNameOrDirectoryName.substring(startIndexOfDeepestDirectory);
+        String asmFileName = vmFileNameOrDirectoryName + fileSeparator + deepestDirectoryName + ".asm";
+        return new File(asmFileName);
+    }
+
     private List<File> getVmFiles() {
         if (vmFileNameOrDirectoryName.endsWith(".vm")) {
             return Arrays.asList(new File(vmFileNameOrDirectoryName));
@@ -94,15 +106,7 @@ public class VMTranslator {
         }
     }
 
-    private File getAsmFile() {
-        if (vmFileNameOrDirectoryName.endsWith(".vm")) {
-            return new File(vmFileNameOrDirectoryName.replace(".vm", ".asm"));
-        }
-
-        String fileSeparator = System.getProperty("file.separator");
-        int startIndexOfDeepestDirectory = vmFileNameOrDirectoryName.lastIndexOf(fileSeparator);
-        String deepestDirectoryName = vmFileNameOrDirectoryName.substring(startIndexOfDeepestDirectory);
-        String asmFileName = vmFileNameOrDirectoryName + fileSeparator + deepestDirectoryName + ".asm";
-        return new File(asmFileName);
+    private boolean containsSysVmFile(List<File> vmFiles) {
+        return vmFiles.stream().anyMatch(f -> f.getName().equals("Sys.vm"));
     }
 }
