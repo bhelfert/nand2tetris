@@ -18,6 +18,9 @@ import static java.util.stream.Collectors.toList;
 
 public class VMTranslator {
 
+    private static final String ASM_FILE_EXTENSION = ".asm";
+    private static final String VM_FILE_EXTENSION = ".vm";
+
     private final String vmFileNameOrDirectoryName;
 
     public static void main(String[] args) {
@@ -79,30 +82,30 @@ public class VMTranslator {
     }
 
     private File getAsmFile() {
-        if (vmFileNameOrDirectoryName.endsWith(".vm")) {
-            return new File(vmFileNameOrDirectoryName.replace(".vm", ".asm"));
+        if (vmFileNameOrDirectoryName.endsWith(VM_FILE_EXTENSION)) {
+            return new File(vmFileNameOrDirectoryName.replace(VM_FILE_EXTENSION, ASM_FILE_EXTENSION));
         }
 
         String fileSeparator = System.getProperty("file.separator");
         int startIndexOfDeepestDirectory = vmFileNameOrDirectoryName.lastIndexOf(fileSeparator);
         String deepestDirectoryName = vmFileNameOrDirectoryName.substring(startIndexOfDeepestDirectory);
-        String asmFileName = vmFileNameOrDirectoryName + fileSeparator + deepestDirectoryName + ".asm";
+        String asmFileName = vmFileNameOrDirectoryName + fileSeparator + deepestDirectoryName + ASM_FILE_EXTENSION;
         return new File(asmFileName);
     }
 
     private List<File> getVmFiles() {
-        if (vmFileNameOrDirectoryName.endsWith(".vm")) {
+        if (vmFileNameOrDirectoryName.endsWith(VM_FILE_EXTENSION)) {
             return Arrays.asList(new File(vmFileNameOrDirectoryName));
         }
 
         try (Stream<File> vmFileStream = Files.list(Paths.get(vmFileNameOrDirectoryName))
-                .filter(p -> p.toString().endsWith(".vm"))
+                .filter(p -> p.toString().endsWith(VM_FILE_EXTENSION))
                 .map(Path::toFile)
                 .sorted()) {
             return vmFileStream.collect(toList());
         }
         catch (IOException e) {
-            throw new RuntimeException("Could not get .vm files in directory [" + vmFileNameOrDirectoryName + "]", e);
+            throw new RuntimeException("Could not get " + VM_FILE_EXTENSION + " files in directory [" + vmFileNameOrDirectoryName + "]", e);
         }
     }
 
