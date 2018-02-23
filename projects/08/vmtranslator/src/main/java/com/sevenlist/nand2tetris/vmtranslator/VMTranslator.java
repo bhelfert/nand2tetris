@@ -102,7 +102,7 @@ public class VMTranslator {
             return vmFileStream.collect(toList());
         }
         catch (IOException e) {
-            throw new RuntimeException("Could not get VM files in directory [" + vmFileNameOrDirectoryName + "]", e);
+            throw new RuntimeException("Could not get .vm files in directory [" + vmFileNameOrDirectoryName + "]", e);
         }
     }
 
