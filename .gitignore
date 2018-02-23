@@ -2,6 +2,7 @@
 *.html
 !projects/09/BitmapEditor/BitmapEditor.html
 *.pdf
+!projects/09/Jack OS API.pdf
 **/*.iml
 **/*.out
 /HDL*
