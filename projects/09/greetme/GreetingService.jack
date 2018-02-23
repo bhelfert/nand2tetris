@@ -1,0 +1,35 @@
+class GreetingService {
+    
+    field String hello;
+    field char exclamationMark;
+
+    constructor GreetingService new() {
+        let hello = "Hello ";
+        let exclamationMark = 33; // Unicode
+        return this;
+    }
+
+    method String greet(String name) {
+        var String greeting;
+        var int i;
+        let greeting = String.new(hello.length() + name.length() + 1);
+        let i = 0;
+        while (i < hello.length()) {
+            do greeting.appendChar(hello.charAt(i));
+            let i = i + 1;
+        }
+        let i = 0;
+        while (i < name.length()) {
+            do greeting.appendChar(name.charAt(i));
+            let i = i + 1;
+        }
+        do greeting.appendChar(exclamationMark);
+        return greeting;
+    }
+
+    method void dispose() {
+        do hello.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}

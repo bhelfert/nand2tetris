@@ -1,6 +1,8 @@
 .DS_Store
 *.html
+!projects/09/BitmapEditor/BitmapEditor.html
 *.pdf
+**/*.iml
 **/*.out
 /HDL*
 /tools/bin/*.dat

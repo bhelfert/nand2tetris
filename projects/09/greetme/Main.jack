@@ -1,0 +1,15 @@
+class Main {
+    
+    function void main() {
+        var String name;
+        var GreetingService greetingService;
+        var String greeting;
+        let name = Keyboard.readLine("What's your name? ");
+        let greetingService = GreetingService.new();
+        let greeting = greetingService.greet(name);
+        do Output.printString(greeting);
+        do Output.println();
+        do greetingService.dispose();
+        return;
+    }
+}
