@@ -18,14 +18,14 @@ using only NAND gates and data flip-flops (DFFs) as atomic, primitive, building 
 
 All chips are implemented using this [Hardware Description Language](http://www.nand2tetris.org/chapters/appendix%20A.pdf) (HDL).
 
+# En Route: Learning The Languages
+
+* Assembly: [Multiply two numbers](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/mult/mult.asm); [blacken/whiten the screen](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/fill/Fill.asm)
+* Jack: ["Hello \<name\>!"](https://github.com/sevenlist/nand2tetris/tree/master/projects/09/greetme)
+
 # Software Hierarchy
 
 * [Assembler](https://github.com/sevenlist/nand2tetris/tree/master/projects/06/assembler)
 * [Virtual Machine Translator](https://github.com/sevenlist/nand2tetris/tree/master/projects/08/vmtranslator)
 * Compiler (for the [Jack](http://www.nand2tetris.org/lectures/PDF/lecture%2009%20high%20level%20language.pdf) programming language)
 * Operating System / standard library for Jack
-
-# En Route: Learning The Languages
-
-* Assembly: [Multiply two numbers](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/mult/mult.asm); [blacken/whiten the screen](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/fill/Fill.asm)
-* Jack: ["Hello \<name\>!"](https://github.com/sevenlist/nand2tetris/tree/master/projects/09/greetme)
