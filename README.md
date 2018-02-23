@@ -14,7 +14,7 @@ The [computer](https://github.com/sevenlist/nand2tetris/blob/master/projects/05/
 * [Memory Elements, incl. PC](https://github.com/sevenlist/nand2tetris/tree/master/projects/03)
 * [CPU, Keyboard, Screen](https://github.com/sevenlist/nand2tetris/tree/master/projects/05)
 
-using only NAND gates and data flip-flops (DFFs) as atomic, primitive, building blocks.
+using only NAND gates and data flip-flops (DFFs) as atomic, primitive, building blocks. A clock is provided by the simulator and emulators.
 
 All chips are implemented using this [Hardware Description Language](http://www.nand2tetris.org/chapters/appendix%20A.pdf) (HDL).
 
