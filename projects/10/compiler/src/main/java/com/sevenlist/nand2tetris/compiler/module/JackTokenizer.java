@@ -90,7 +90,7 @@ public class JackTokenizer {
                 intValue = -1;
                 stringValue = null;
                 ++currentPositionInLine;
-                System.out.println("Keyword: " + this.keyword);
+                System.out.println("<keyword> " + this.keyword + " </keyword>");
                 return;
             }
 
@@ -109,7 +109,7 @@ public class JackTokenizer {
                             intValue = -1;
                             stringValue = null;
                             ++currentPositionInLine;
-                            System.out.println("Identifier: " + identifier);
+                            System.out.println("<identifier> " + identifier + " </identifier>");
                             return;
                         }
                     }
@@ -126,7 +126,7 @@ public class JackTokenizer {
                 intValue = -1;
                 stringValue = null;
                 ++currentPositionInLine;
-                System.out.println("Symbol: " + this.symbol);
+                System.out.println("<symbol> " + this.symbol + " </symbol>");
                 return;
             }
 
@@ -145,7 +145,7 @@ public class JackTokenizer {
                         identifier = null;
                         stringValue = null;
                         ++currentPositionInLine;
-                        System.out.println("Integer constant: " + intValue);
+                        System.out.println("<integerConstant> " + intValue + " </integerConstant>");
                         return;
                     }
                 }
@@ -164,8 +164,8 @@ public class JackTokenizer {
                         identifier = null;
                         intValue = -1;
                         stringValue = stringValue.substring(1, stringValue.length());
-                        ++currentPositionInLine;
-                        System.out.println("String constant: " + stringValue);
+                        currentPositionInLine += 2;
+                        System.out.println("<stringConstant> " + stringValue + " </stringConstant>");
                         return;
                     }
                 }
