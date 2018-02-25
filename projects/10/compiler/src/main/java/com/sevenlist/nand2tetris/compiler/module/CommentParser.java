@@ -27,6 +27,12 @@ class CommentParser {
     }
 
     String stripComments(String s) {
+        s = stripCommentsUntilClosing(s);
+        s = stripCommentToEndOfLine(s);
+        return s;
+    }
+
+    private String stripCommentsUntilClosing(String s) {
         int commentEndIndex;
         while ((commentEndIndex = s.indexOf("*/")) != -1) {
             int commentStartIndex = s.indexOf("/*");
@@ -34,28 +40,46 @@ class CommentParser {
                 throw new RuntimeException("Invalid comment syntax as '/*' or '/**' is missing in: " + s);
             }
             if (commentStartIndex == 0) {
-                s = s.substring(commentEndIndex + 2, s.length()).trim();
+                s = getTextAfterComment(s, commentEndIndex);
             }
             else {
-                String textBeforeComment = s.substring(0, commentStartIndex).trim();
-                String textAfterComment = s.substring(commentEndIndex + 2, s.length()).trim();
-                s = textBeforeComment;
-                if (!textAfterComment.isEmpty()) {
-                    s += " " + textAfterComment;
-                }
+                s = getTextSurroundingComment(s, commentStartIndex, commentEndIndex);
             }
-        }
-        int slashesCommentIndex;
-        if ((slashesCommentIndex = s.indexOf("//")) != -1) {
-            s = s.substring(0, slashesCommentIndex).trim();
         }
         return s;
     }
 
-    private boolean isBlank(String s) {
-        if (s.isEmpty()) {
-            return true;
+    private String getTextSurroundingComment(String s, int commentStartIndex, int commentEndIndex) {
+        String textBeforeComment = getTextBeforeComment(s, commentStartIndex);
+        String textAfterComment = getTextAfterComment(s, commentEndIndex);
+        s = textBeforeComment;
+        if (!textAfterComment.isEmpty()) {
+            s += " " + textAfterComment;
         }
+        return s;
+    }
+
+    private String getTextBeforeComment(String s, int commentStartIndex) {
+        return s.substring(0, commentStartIndex).trim();
+    }
+
+    private String getTextAfterComment(String s, int commentEndIndex) {
+        return s.substring(commentEndIndex + 2, s.length()).trim();
+    }
+
+    private String stripCommentToEndOfLine(String s) {
+        int slashesCommentIndex = s.indexOf("//");
+        if (slashesCommentIndex == -1) {
+            return s;
+        }
+        return s.substring(0, slashesCommentIndex).trim();
+    }
+
+    private boolean isBlank(String s) {
+        return s.isEmpty() ? true : containsWhitespace(s);
+    }
+
+    private boolean containsWhitespace(String s) {
         for (int i = 0; i < s.length(); i++) {
             if (!Character.isWhitespace(s.charAt(i))) {
                 return false;
