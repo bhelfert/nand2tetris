@@ -196,21 +196,21 @@ public class JackTokenizer {
         if (!tokenType.equals(IDENTIFIER)) {
             throw new IllegalStateException("TokenType is " + tokenType + " instead of " + IDENTIFIER);
         }
-        return "";
+        return identifier;
     }
 
     public int intVal() {
         if (!tokenType.equals(INT_CONST)) {
             throw new IllegalStateException("TokenType is " + tokenType + " instead of " + INT_CONST);
         }
-        return -1;
+        return intValue;
     }
 
     public String stringVal() {
         if (!tokenType.equals(STRING_CONST)) {
             throw new IllegalStateException("TokenType is " + tokenType + " instead of " + STRING_CONST);
         }
-        return "";
+        return stringValue;
     }
 
     private String readLine() {
