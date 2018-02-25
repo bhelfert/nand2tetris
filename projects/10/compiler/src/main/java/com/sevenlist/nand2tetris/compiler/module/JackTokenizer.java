@@ -72,7 +72,10 @@ public class JackTokenizer {
         String token = "";
         for (; currentPositionInLine < endOfLinePosition; currentPositionInLine++) {
             token += currentLine.charAt(currentPositionInLine);
-            token = token.trim();
+
+            if (!STRING_CONST.equals(tokenType)) {
+                token = token.trim();
+            }
 
             if (token.isEmpty()) {
                 continue;
@@ -150,17 +153,17 @@ public class JackTokenizer {
             }
 
             if (isStringConstant(firstTokenChar)) {
+                tokenType = STRING_CONST;
                 stringValue = token;
                 int nextPositionInLine = currentPositionInLine + 1;
                 if (nextPositionInLine < endOfLinePosition) {
                     String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
                     if (nextTokenChar.equals(DOUBLE_QUOTE)) {
-                        tokenType = STRING_CONST;
                         this.keyword = null;
                         this.symbol = null;
                         identifier = null;
                         intValue = -1;
-                        stringValue = stringValue.substring(1, currentPositionInLine);
+                        stringValue = stringValue.substring(1, stringValue.length());
                         ++currentPositionInLine;
                         System.out.println("String constant: " + stringValue);
                         return;
