@@ -1,5 +1,7 @@
 package com.sevenlist.nand2tetris.compiler;
 
+import com.sevenlist.nand2tetris.compiler.module.JackTokenizer;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +29,10 @@ public class JackAnalyzer {
 
     public void analyze() {
         for (File jackFile : getJackFiles()) {
+            JackTokenizer tokenizer = new JackTokenizer(jackFile);
+            while (tokenizer.hasMoreTokens()) {
+                tokenizer.advance();
+            }
         }
     }
 
