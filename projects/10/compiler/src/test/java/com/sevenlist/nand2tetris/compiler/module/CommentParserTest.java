@@ -106,7 +106,12 @@ public class CommentParserTest {
 
     @Test
     public void apiCommentsAreStripped() {
-        assertThat(commentParser.stripComments("/** Left API comment. */ some text /* Right API comment. */ ")).isEqualTo("some text");
+        assertThat(commentParser.stripComments("/** Left API comment. */ some text /** Right API comment. */ ")).isEqualTo("some text");
+    }
+
+    @Test
+    public void commentsOfDifferentTypesAreStripped() {
+        assertThat(commentParser.stripComments("/* left comment */ text1 /** API comment. */ text2 // right comment")).isEqualTo("text1 text2");
     }
 
     @Test(expected = RuntimeException.class)

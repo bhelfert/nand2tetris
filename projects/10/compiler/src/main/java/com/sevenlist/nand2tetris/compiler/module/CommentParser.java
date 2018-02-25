@@ -27,11 +27,6 @@ class CommentParser {
     }
 
     String stripComments(String s) {
-        int slashesCommentIndex;
-        if ((slashesCommentIndex = s.indexOf("//")) != -1) {
-            return s.substring(0, slashesCommentIndex).trim();
-        }
-
         int commentEndIndex;
         while ((commentEndIndex = s.indexOf("*/")) != -1) {
             int commentStartIndex = s.indexOf("/*");
@@ -49,6 +44,10 @@ class CommentParser {
                     s += " " + textAfterComment;
                 }
             }
+        }
+        int slashesCommentIndex;
+        if ((slashesCommentIndex = s.indexOf("//")) != -1) {
+            s = s.substring(0, slashesCommentIndex).trim();
         }
         return s;
     }
