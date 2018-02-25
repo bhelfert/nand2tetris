@@ -85,6 +85,7 @@ public class CommentParserTest {
 
     @Test
     public void onlyCommentIsCompletelyStripped() {
+        assertThat(commentParser.stripComments("// only comment")).isEqualTo("");
         assertThat(commentParser.stripComments("/* only comment */")).isEqualTo("");
     }
 
@@ -101,6 +102,11 @@ public class CommentParserTest {
     @Test
     public void commentsSurroundingTextAreStripped() {
         assertThat(commentParser.stripComments("/* left comment */ some text /* right comment */ ")).isEqualTo("some text");
+    }
+
+    @Test
+    public void apiCommentsAreStripped() {
+        assertThat(commentParser.stripComments("/** Left API comment. */ some text /* Right API comment. */ ")).isEqualTo("some text");
     }
 
     @Test(expected = RuntimeException.class)
