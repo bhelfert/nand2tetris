@@ -6,5 +6,6 @@ public enum TokenType {
     SYMBOL,
     IDENTIFIER,
     INT_CONST,
-    STRING_CONST
+    STRING_CONST,
+    COMMENT_OR_EMPTY_LINE
 }

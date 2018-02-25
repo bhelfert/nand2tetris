@@ -1,9 +1,9 @@
 Modules/APIs implemented as specified in the book.
 
-No checks, no error handling. Assumptions: Only valid data is passed; APIs are used correctly. 
+Only few checks, little error handling. Assumptions: Only valid data is passed; APIs are used correctly. 
 
-Only integration tests.
+Uses only JUnit and AssertJ, no libs like Commons Lang. 
 
-Just hacked, make-it-work, try-it-out, PoC code. Simplistic. Bad style. Not refactored. Non-OO code. Don't reuse!
+Just hacked, make-it-work, try-it-out, PoC code. Simplistic. Don't reuse!
 
 You have been warned.
