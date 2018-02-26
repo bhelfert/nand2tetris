@@ -30,11 +30,9 @@ public class JackAnalyzerIntegrationTest {
         File generatedTokenizerFile = new File(SRC_TEST_RESOURCES_PATH + relativePathToSourceFile.replace(".jack", "T.xml"));
         assertThat(contentOf(generatedTokenizerFile)).isEqualTo(contentOf(referenceTokenizerFile));
 
-        /*
         File referenceParserFile = new File(SRC_TEST_RESOURCES_PATH + relativePathToSourceFile.replace(".jack", ".reference.xml"));
         File generatedParserFile = new File(SRC_TEST_RESOURCES_PATH + relativePathToSourceFile.replace(".jack", ".xml"));
         assertThat(contentOf(generatedParserFile)).isEqualTo(contentOf(referenceParserFile));
-        */
     }
 
     private void analyze(String relativePathToSourceFile) {
