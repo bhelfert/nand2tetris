@@ -17,6 +17,7 @@ public class JackTokenizer {
 
     private final CommentParser commentParser = new CommentParser();
     private final BufferedReader jackTokenReader;
+    private final BufferedWriter jackTokenWriter;
 
     private boolean newLine;
     private String currentLine;
@@ -31,12 +32,9 @@ public class JackTokenizer {
     private String stringValue;
 
     public JackTokenizer(File jackFile) {
-        try {
-            jackTokenReader = new BufferedReader(new FileReader(jackFile));
-        }
-        catch (FileNotFoundException e) {
-            throw new IllegalArgumentException("File [" + jackFile + "] not found", e);
-        }
+        jackTokenReader = createJackTokenReader(jackFile);
+        jackTokenWriter = createJackTokenWriter(jackFile);
+        writeLine("<tokens>");
     }
 
     public boolean hasMoreTokens() {
@@ -50,6 +48,8 @@ public class JackTokenizer {
         newLine = true;
         if (currentLine == null) {
             endOfLinePosition = -1;
+            writeLine("</tokens>");
+            close(jackTokenWriter);
             return false;
         }
         currentPositionInLine = 0;
@@ -90,7 +90,7 @@ public class JackTokenizer {
                 intValue = -1;
                 stringValue = null;
                 ++currentPositionInLine;
-                System.out.println("<keyword> " + this.keyword + " </keyword>");
+                writeLine("<keyword> " + this.keyword + " </keyword>");
                 return;
             }
 
@@ -109,7 +109,7 @@ public class JackTokenizer {
                             intValue = -1;
                             stringValue = null;
                             ++currentPositionInLine;
-                            System.out.println("<identifier> " + identifier + " </identifier>");
+                            writeLine("<identifier> " + identifier + " </identifier>");
                             return;
                         }
                     }
@@ -126,7 +126,7 @@ public class JackTokenizer {
                 intValue = -1;
                 stringValue = null;
                 ++currentPositionInLine;
-                System.out.println("<symbol> " + this.symbol + " </symbol>");
+                writeLine("<symbol> " + this.symbol.toEscapeString() + " </symbol>");
                 return;
             }
 
@@ -145,7 +145,7 @@ public class JackTokenizer {
                         identifier = null;
                         stringValue = null;
                         ++currentPositionInLine;
-                        System.out.println("<integerConstant> " + intValue + " </integerConstant>");
+                        writeLine("<integerConstant> " + intValue + " </integerConstant>");
                         return;
                     }
                 }
@@ -165,7 +165,7 @@ public class JackTokenizer {
                         intValue = -1;
                         stringValue = stringValue.substring(1, stringValue.length());
                         currentPositionInLine += 2;
-                        System.out.println("<stringConstant> " + stringValue + " </stringConstant>");
+                        writeLine("<stringConstant> " + stringValue + " </stringConstant>");
                         return;
                     }
                 }
@@ -216,19 +216,49 @@ public class JackTokenizer {
         return stringValue;
     }
 
+    private BufferedReader createJackTokenReader(File jackFile) {
+        try {
+            return new BufferedReader(new FileReader(jackFile));
+        }
+        catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("File [" + jackFile + "] not found", e);
+        }
+    }
+
+    private BufferedWriter createJackTokenWriter(File jackFile) {
+        File tokenFile = new File(jackFile.getPath().replace(".jack", "T.xml"));
+        try {
+            return new BufferedWriter(new FileWriter(tokenFile));
+        }
+        catch (IOException e) {
+            throw new RuntimeException("File [" + tokenFile + "] cannot be created", e);
+        }
+    }
+
     private String readLine() {
         String line;
         try {
             line = jackTokenReader.readLine();
         }
         catch (IOException e) {
-            closeJackTokenReader();
+            close(jackTokenReader);
             throw new RuntimeException("Could not read next line", e);
         }
         if (line == null) {
-            closeJackTokenReader();
+            close(jackTokenReader);
         }
         return line;
+    }
+
+    private void writeLine(String line) {
+        try {
+            jackTokenWriter.write(line);
+            jackTokenWriter.newLine();
+        }
+        catch (IOException e) {
+            close(jackTokenWriter);
+            throw new RuntimeException("Could not write line [" + line + "] in .xml file", e);
+        }
     }
 
     private boolean isIdentifier(String firstTokenChar) {
@@ -243,9 +273,9 @@ public class JackTokenizer {
         return firstTokenChar.equals(DOUBLE_QUOTE);
     }
 
-    private void closeJackTokenReader() {
+    private void close(Closeable closeable) {
         try {
-            jackTokenReader.close();
+            closeable.close();
         }
         catch (IOException e) {
             e.printStackTrace();
