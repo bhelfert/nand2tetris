@@ -83,93 +83,51 @@ public class JackTokenizer {
 
             Keyword keyword = Keyword.fromString(token);
             if (keyword != null) {
-                tokenType = KEYWORD;
-                this.keyword = keyword;
-                symbol = null;
-                identifier = null;
-                intValue = -1;
-                stringValue = null;
-                ++currentPositionInLine;
-                writeLine("<keyword> " + this.keyword + " </keyword>");
+                setToken(KEYWORD, keyword);
                 return;
             }
 
-            String firstTokenChar = String.valueOf(token.charAt(0));
-
-            if (isIdentifier(firstTokenChar)) {
-                if (IDENTIFIER_PATTERN.matcher(token).matches()) {
-                    identifier = token;
-                    int nextPositionInLine = currentPositionInLine + 1;
-                    if (nextPositionInLine < endOfLinePosition) {
-                        String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
-                        if (nextTokenChar.equals(SPACE) || (Symbol.fromString(nextTokenChar) != null)) {
-                            tokenType = IDENTIFIER;
-                            this.keyword = null;
-                            this.symbol = null;
-                            intValue = -1;
-                            stringValue = null;
-                            ++currentPositionInLine;
-                            writeLine("<identifier> " + identifier + " </identifier>");
-                            return;
-                        }
-                    }
+            if (token.length() == 1) {
+                Symbol symbol = Symbol.fromString(token);
+                if (symbol != null) {
+                    setToken(SYMBOL, symbol);
+                    return;
                 }
+            }
+
+            int nextPositionInLine = currentPositionInLine + 1;
+            if (nextPositionInLine == endOfLinePosition) {
                 continue;
             }
 
-            Symbol symbol = Symbol.fromString(token);
-            if (symbol != null) {
-                tokenType = SYMBOL;
-                this.keyword = null;
-                this.symbol = symbol;
-                identifier = null;
-                intValue = -1;
-                stringValue = null;
-                ++currentPositionInLine;
-                writeLine("<symbol> " + this.symbol.toEscapeString() + " </symbol>");
-                return;
+            String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
+
+            if (isIdentifier(token)) {
+                identifier = token;
+                if (isSpaceOrSymbol(nextTokenChar)) {
+                    setToken(IDENTIFIER, identifier);
+                    return;
+                }
             }
 
-            if (isIntegerConstant(firstTokenChar)) {
+            if (isIntegerConstant(token)) {
                 intValue = Integer.valueOf(token);
-                if (intValue > 32767) {
-                    throw new RuntimeException("Integer constant is too big (> 32767): " + token);
+                checkIfIntValueIsValid();
+                if (isSpaceOrSymbol(nextTokenChar)) {
+                    setToken(INT_CONST, intValue);
+                    return;
                 }
-                int nextPositionInLine = currentPositionInLine + 1;
-                if (nextPositionInLine < endOfLinePosition) {
-                    String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
-                    if (nextTokenChar.equals(SPACE) || (Symbol.fromString(nextTokenChar) != null)) {
-                        tokenType = INT_CONST;
-                        this.keyword = null;
-                        this.symbol = null;
-                        identifier = null;
-                        stringValue = null;
-                        ++currentPositionInLine;
-                        writeLine("<integerConstant> " + intValue + " </integerConstant>");
-                        return;
-                    }
-                }
-                continue;
             }
 
-            if (isStringConstant(firstTokenChar)) {
-                tokenType = STRING_CONST;
+            if (isStringConstant(token)) {
                 stringValue = token;
-                int nextPositionInLine = currentPositionInLine + 1;
-                if (nextPositionInLine < endOfLinePosition) {
-                    String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
-                    if (nextTokenChar.equals(DOUBLE_QUOTE)) {
-                        this.keyword = null;
-                        this.symbol = null;
-                        identifier = null;
-                        intValue = -1;
-                        stringValue = stringValue.substring(1, stringValue.length());
-                        currentPositionInLine += 2;
-                        writeLine("<stringConstant> " + stringValue + " </stringConstant>");
-                        return;
-                    }
+                tokenType = STRING_CONST;
+                if (nextTokenChar.equals(DOUBLE_QUOTE)) {
+                    stringValue = stringValue.substring(1, stringValue.length());
+                    setToken(STRING_CONST, stringValue);
+                    ++currentPositionInLine;
+                    return;
                 }
-                continue;
             }
         }
     }
@@ -182,37 +140,27 @@ public class JackTokenizer {
     }
 
     public Keyword keyword() {
-        if (!tokenType.equals(KEYWORD)) {
-            throw new IllegalStateException("TokenType is " + tokenType + " instead of " + KEYWORD);
-        }
+        checkThatTokenIsOfType(KEYWORD);
         return keyword;
     }
 
     public Symbol symbol() {
-        if (!tokenType.equals(SYMBOL)) {
-            throw new IllegalStateException("TokenType is " + tokenType + " instead of " + SYMBOL);
-        }
+        checkThatTokenIsOfType(SYMBOL);
         return symbol;
     }
 
     public String identifier() {
-        if (!tokenType.equals(IDENTIFIER)) {
-            throw new IllegalStateException("TokenType is " + tokenType + " instead of " + IDENTIFIER);
-        }
+        checkThatTokenIsOfType(IDENTIFIER);
         return identifier;
     }
 
     public int intVal() {
-        if (!tokenType.equals(INT_CONST)) {
-            throw new IllegalStateException("TokenType is " + tokenType + " instead of " + INT_CONST);
-        }
+        checkThatTokenIsOfType(INT_CONST);
         return intValue;
     }
 
     public String stringVal() {
-        if (!tokenType.equals(STRING_CONST)) {
-            throw new IllegalStateException("TokenType is " + tokenType + " instead of " + STRING_CONST);
-        }
+        checkThatTokenIsOfType(STRING_CONST);
         return stringValue;
     }
 
@@ -261,16 +209,57 @@ public class JackTokenizer {
         }
     }
 
-    private boolean isIdentifier(String firstTokenChar) {
-        return firstTokenChar.equals(UNDERSCORE) || LETTER_PATTERN.matcher(firstTokenChar).matches();
+    private void setToken(TokenType tokenType, Object value) {
+        this.tokenType = tokenType;
+        keyword = tokenType.equals(KEYWORD) ? (Keyword) value : null;
+        symbol = tokenType.equals(SYMBOL) ? (Symbol) value : null;
+        identifier = tokenType.equals(IDENTIFIER) ? (String) value : null;
+        intValue = tokenType.equals(INT_CONST) ? (int) value : -1;
+        stringValue = tokenType.equals(STRING_CONST) ? (String) value : null;
+        ++currentPositionInLine;
+        writeTokenInXml(tokenType, value);
     }
 
-    private boolean isIntegerConstant(String firstTokenChar) {
+    private void writeTokenInXml(TokenType tokenType, Object value) {
+        String valueAsString = tokenType.equals(SYMBOL) ? ((Symbol) value).toEscapeString() : value.toString();
+        writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
+    }
+
+    private boolean isIdentifier(String token) {
+        String firstTokenChar = getFirstChar(token);
+        boolean startsWithLetterOrUnderscore = (LETTER_PATTERN.matcher(firstTokenChar).matches() || firstTokenChar.equals(UNDERSCORE));
+        boolean containsLettersOrDigitsOrUnderscore = IDENTIFIER_PATTERN.matcher(token).matches();
+        return startsWithLetterOrUnderscore && containsLettersOrDigitsOrUnderscore;
+    }
+
+    private boolean isIntegerConstant(String token) {
+        String firstTokenChar = getFirstChar(token);
         return DIGIT_PATTERN.matcher(firstTokenChar).matches();
     }
 
-    private boolean isStringConstant(String firstTokenChar) {
+    private boolean isStringConstant(String token) {
+        String firstTokenChar = getFirstChar(token);
         return firstTokenChar.equals(DOUBLE_QUOTE);
+    }
+
+    private String getFirstChar(String token) {
+        return String.valueOf(token.charAt(0));
+    }
+
+    private boolean isSpaceOrSymbol(String tokenChar) {
+        return tokenChar.equals(SPACE) || (Symbol.fromString(tokenChar) != null);
+    }
+
+    private void checkIfIntValueIsValid() {
+        if (intValue > 32767) {
+            throw new RuntimeException("Integer constant is too big (> 32767): " + intValue);
+        }
+    }
+
+    private void checkThatTokenIsOfType(TokenType tokenType) {
+        if (!this.tokenType.equals(tokenType)) {
+            throw new IllegalStateException("TokenType is " + this.tokenType + " instead of " + tokenType);
+        }
     }
 
     private void close(Closeable closeable) {
