@@ -374,7 +374,7 @@ public class CodeWriter {
     private void writeLine(String line) {
         try {
             asmFileWriter.write(line);
-            asmFileWriter.write(System.lineSeparator());
+            asmFileWriter.newLine();
         }
         catch (IOException e) {
             throw new RuntimeException("Could not write line [" + line + "] in .asm file", e);
