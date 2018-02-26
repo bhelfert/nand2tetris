@@ -97,7 +97,7 @@ public class JackTokenizer {
 
             int nextPositionInLine = currentPositionInLine + 1;
             if (nextPositionInLine == endOfLinePosition) {
-                continue;
+                return;
             }
 
             String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
