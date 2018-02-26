@@ -19,6 +19,7 @@ public class CodeWriter {
             asmFileWriter = new BufferedWriter(new FileWriter(asmFile));
         }
         catch (IOException e) {
+            close();
             throw new RuntimeException("Could not write .asm file [" + asmFile.getPath() + "]", e);
         }
     }
@@ -123,7 +124,9 @@ public class CodeWriter {
 
     public void close() {
         try {
-            asmFileWriter.close();
+            if (asmFileWriter != null) {
+                asmFileWriter.close();
+            }
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -377,6 +380,7 @@ public class CodeWriter {
             asmFileWriter.newLine();
         }
         catch (IOException e) {
+            close();
             throw new RuntimeException("Could not write line [" + line + "] in .asm file", e);
         }
     }
