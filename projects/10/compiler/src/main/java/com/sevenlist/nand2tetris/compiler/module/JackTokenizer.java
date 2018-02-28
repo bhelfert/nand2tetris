@@ -97,39 +97,23 @@ public class JackTokenizer {
             String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
 
             if (isIdentifier(token)) {
-                identifier = token;
-                if (!isSpaceOrSymbol(nextTokenChar)) {
+                if (scanIdentifierOrKeyword(token, nextTokenChar)) {
                     continue;
-                }
-                Keyword keyword = Keyword.fromString(token);
-                if (keyword != null) {
-                    setToken(KEYWORD, keyword);
-                }
-                else {
-                    setToken(IDENTIFIER, identifier);
                 }
                 return;
             }
 
             if (isIntegerConstant(token)) {
-                intValue = Integer.valueOf(token);
-                if (!isSpaceOrSymbol(nextTokenChar)) {
+                if (scanIntegerConstant(token, nextTokenChar)) {
                     continue;
                 }
-                checkIfIntValueIsValid();
-                setToken(INT_CONST, intValue);
                 return;
             }
 
             if (isStringConstant(token)) {
-                stringValue = token;
-                tokenType = STRING_CONST;
-                if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
+                if (scanStringConstant(token, nextTokenChar)) {
                     continue;
                 }
-                stringValue = stringValue.substring(1, stringValue.length());
-                setToken(STRING_CONST, stringValue);
-                ++currentPositionInLine;
                 return;
             }
         }
@@ -235,14 +219,52 @@ public class JackTokenizer {
         return startsWithLetterOrUnderscore && containsLettersOrDigitsOrUnderscore;
     }
 
+    private boolean scanIdentifierOrKeyword(String token, String nextTokenChar) {
+        identifier = token;
+        if (!isSpaceOrSymbol(nextTokenChar)) {
+            return true; // continue scanning of token
+        }
+
+        Keyword keyword = Keyword.fromString(token);
+        if (keyword != null) {
+            setToken(KEYWORD, keyword);
+        }
+        else {
+            setToken(IDENTIFIER, identifier);
+        }
+        return false;
+    }
+
     private boolean isIntegerConstant(String token) {
         String firstTokenChar = getFirstChar(token);
         return DIGIT_PATTERN.matcher(firstTokenChar).matches();
     }
 
+    private boolean scanIntegerConstant(String token, String nextTokenChar) {
+        intValue = Integer.valueOf(token);
+        if (!isSpaceOrSymbol(nextTokenChar)) {
+            return true; // continue scanning of token
+        }
+        checkIfIntValueIsValid();
+        setToken(INT_CONST, intValue);
+        return false;
+    }
+
     private boolean isStringConstant(String token) {
         String firstTokenChar = getFirstChar(token);
         return firstTokenChar.equals(DOUBLE_QUOTE);
+    }
+
+    private boolean scanStringConstant(String token, String nextTokenChar) {
+        stringValue = token;
+        tokenType = STRING_CONST;
+        if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
+            return true; // continue scanning of token
+        }
+        stringValue = stringValue.substring(1, stringValue.length());
+        setToken(STRING_CONST, stringValue);
+        ++currentPositionInLine;
+        return false;
     }
 
     private String getFirstChar(String token) {
