@@ -97,7 +97,7 @@ public class JackTokenizer {
             String firstTokenChar = String.valueOf(tokenChars.charAt(0));
             String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
 
-            if (isIdentifier(tokenChars, firstTokenChar)) {
+            if (isIdentifier(firstTokenChar, tokenChars)) {
                 if (scanIdentifierOrKeyword(tokenChars, nextTokenChar)) {
                     continue;
                 }
@@ -213,7 +213,7 @@ public class JackTokenizer {
         writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
     }
 
-    private boolean isIdentifier(String tokenChars, String firstTokenChar) {
+    private boolean isIdentifier(String firstTokenChar, String tokenChars) {
         boolean startsWithLetterOrUnderscore = (LETTER_PATTERN.matcher(firstTokenChar).matches() || firstTokenChar.equals(UNDERSCORE));
         boolean containsLettersOrDigitsOrUnderscore = IDENTIFIER_PATTERN.matcher(tokenChars).matches();
         return startsWithLetterOrUnderscore && containsLettersOrDigitsOrUnderscore;
