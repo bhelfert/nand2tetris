@@ -15,6 +15,9 @@ public class JackTokenizer {
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("\\w+");
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
+    private static final boolean CONTINUE_SCANNING_OF_TOKEN = true;
+    private static final boolean SCAN_NEXT_TOKEN = false;
+
     private final CommentScanner commentScanner = new CommentScanner();
     private final BufferedReader jackTokenReader;
     private final BufferedWriter jackTokenWriter;
@@ -59,7 +62,7 @@ public class JackTokenizer {
     }
 
     public void advance() {
-        if (!scanComments()) {
+        if (scanComments() == SCAN_NEXT_TOKEN) {
             return;
         }
         scanTokens();
@@ -162,13 +165,13 @@ public class JackTokenizer {
         if (newLine) {
             if (commentScanner.isCommentOrWhitespace(currentLine)) {
                 tokenType = COMMENT_OR_EMPTY_LINE;
-                return false; // scan next token
+                return SCAN_NEXT_TOKEN;
             }
             tokenType = null;
             currentLine = commentScanner.stripComments(currentLine);
             endOfLinePosition = currentLine.length();
         }
-        return true; // continue scanning of token
+        return CONTINUE_SCANNING_OF_TOKEN;
     }
 
     private void scanTokens() {
@@ -185,7 +188,7 @@ public class JackTokenizer {
             }
 
             if (isSymbol(tokenChars)) {
-                if (!scanSymbol(tokenChars)) {
+                if (scanSymbol(tokenChars) == SCAN_NEXT_TOKEN) {
                     return;
                 }
             }
@@ -198,24 +201,24 @@ public class JackTokenizer {
             String nextTokenChar = String.valueOf(currentLine.charAt(currentPositionInLine + 1));
 
             if (isIdentifier(firstTokenChar, tokenChars)) {
-                if (scanIdentifierOrKeyword(tokenChars, nextTokenChar)) {
-                    continue;
+                if (scanIdentifierOrKeyword(tokenChars, nextTokenChar) == SCAN_NEXT_TOKEN) {
+                    return;
                 }
-                return;
+                continue;
             }
 
             if (isIntegerConstant(firstTokenChar)) {
-                if (scanIntegerConstant(tokenChars, nextTokenChar)) {
-                    continue;
+                if (scanIntegerConstant(tokenChars, nextTokenChar) == SCAN_NEXT_TOKEN) {
+                    return;
                 }
-                return;
+                continue;
             }
 
             if (isStringConstant(firstTokenChar)) {
-                if (scanStringConstant(tokenChars, nextTokenChar)) {
-                    continue;
+                if (scanStringConstant(tokenChars, nextTokenChar) == SCAN_NEXT_TOKEN) {
+                    return;
                 }
-                return;
+                continue;
             }
         }
     }
@@ -236,10 +239,10 @@ public class JackTokenizer {
     private boolean scanSymbol(String tokenChars) {
         Symbol symbol = Symbol.fromString(tokenChars);
         if (symbol == null) {
-            return true; // continue scanning of token
+            return CONTINUE_SCANNING_OF_TOKEN;
         }
         setToken(SYMBOL, symbol);
-        return false; // scan next token
+        return SCAN_NEXT_TOKEN;
     }
 
     private boolean isIdentifier(String firstTokenChar, String tokenChars) {
@@ -251,7 +254,7 @@ public class JackTokenizer {
     private boolean scanIdentifierOrKeyword(String tokenChars, String nextTokenChar) {
         identifier = tokenChars;
         if (!isSpaceOrSymbol(nextTokenChar)) {
-            return true; // continue scanning of token
+            return CONTINUE_SCANNING_OF_TOKEN;
         }
 
         Keyword keyword = Keyword.fromString(tokenChars);
@@ -261,7 +264,7 @@ public class JackTokenizer {
         else {
             setToken(IDENTIFIER, identifier);
         }
-        return false; // scan next token
+        return SCAN_NEXT_TOKEN;
     }
 
     private boolean isIntegerConstant(String firstTokenChar) {
@@ -271,11 +274,11 @@ public class JackTokenizer {
     private boolean scanIntegerConstant(String tokenChars, String nextTokenChar) {
         intValue = Integer.valueOf(tokenChars);
         if (!isSpaceOrSymbol(nextTokenChar)) {
-            return true; // continue scanning of token
+            return CONTINUE_SCANNING_OF_TOKEN;
         }
         checkIfIntValueIsValid();
         setToken(INT_CONST, intValue);
-        return false; // scan next token
+        return SCAN_NEXT_TOKEN;
     }
 
     private boolean isStringConstant(String firstTokenChar) {
@@ -286,12 +289,12 @@ public class JackTokenizer {
         stringValue = tokenChars;
         tokenType = STRING_CONST;
         if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
-            return true; // continue scanning of token
+            return CONTINUE_SCANNING_OF_TOKEN;
         }
         stringValue = stringValue.substring(1, stringValue.length());
         setToken(STRING_CONST, stringValue);
         ++currentPositionInLine;
-        return false; // scan next token
+        return SCAN_NEXT_TOKEN;
     }
 
     private boolean isSpaceOrSymbol(String tokenChar) {
