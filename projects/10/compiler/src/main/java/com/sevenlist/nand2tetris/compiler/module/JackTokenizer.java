@@ -81,10 +81,8 @@ public class JackTokenizer {
                 continue;
             }
 
-            if (tokenChars.length() == 1) {
-                Symbol symbol = Symbol.fromString(tokenChars);
-                if (symbol != null) {
-                    setToken(SYMBOL, symbol);
+            if (isSymbol(tokenChars)) {
+                if (!scanSymbol(tokenChars)) {
                     return;
                 }
             }
@@ -211,6 +209,19 @@ public class JackTokenizer {
     private void writeTokenInXml(TokenType tokenType, Object value) {
         String valueAsString = tokenType.equals(SYMBOL) ? ((Symbol) value).toEscapeString() : value.toString();
         writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
+    }
+
+    private boolean isSymbol(String tokenChars) {
+        return tokenChars.length() == 1;
+    }
+
+    private boolean scanSymbol(String tokenChars) {
+        Symbol symbol = Symbol.fromString(tokenChars);
+        if (symbol == null) {
+            return true; // continue scanning of token
+        }
+        setToken(SYMBOL, symbol);
+        return false;
     }
 
     private boolean isIdentifier(String firstTokenChar, String tokenChars) {
