@@ -1,6 +1,6 @@
 package com.sevenlist.nand2tetris.compiler.module;
 
-class CommentParser {
+class CommentScanner {
 
     private boolean inComment;
 

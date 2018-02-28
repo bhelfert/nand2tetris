@@ -15,7 +15,7 @@ public class JackTokenizer {
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("\\w+");
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
-    private final CommentParser commentParser = new CommentParser();
+    private final CommentScanner commentScanner = new CommentScanner();
     private final BufferedReader jackTokenReader;
     private final BufferedWriter jackTokenWriter;
 
@@ -60,12 +60,12 @@ public class JackTokenizer {
 
     public void advance() {
         if (newLine) {
-            if (commentParser.isCommentOrWhitespace(currentLine)) {
+            if (commentScanner.isCommentOrWhitespace(currentLine)) {
                 tokenType = COMMENT_OR_EMPTY_LINE;
                 return;
             }
             tokenType = null;
-            currentLine = commentParser.stripComments(currentLine);
+            currentLine = commentScanner.stripComments(currentLine);
             endOfLinePosition = currentLine.length();
         }
 
