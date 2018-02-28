@@ -73,7 +73,7 @@ public class JackTokenizer {
         for (; currentPositionInLine < endOfLinePosition; currentPositionInLine++) {
             tokenChars += currentLine.charAt(currentPositionInLine);
 
-            if (!STRING_CONST.equals(tokenType)) {
+            if (isNotStringConstant()) {
                 tokenChars = tokenChars.trim();
             }
 
@@ -87,13 +87,12 @@ public class JackTokenizer {
                 }
             }
 
-            int nextPositionInLine = currentPositionInLine + 1;
-            if (nextPositionInLine == endOfLinePosition) {
+            if (isEndOfLineReached()) {
                 return;
             }
 
             String firstTokenChar = String.valueOf(tokenChars.charAt(0));
-            String nextTokenChar = String.valueOf(currentLine.charAt(nextPositionInLine));
+            String nextTokenChar = String.valueOf(currentLine.charAt(currentPositionInLine + 1));
 
             if (isIdentifier(firstTokenChar, tokenChars)) {
                 if (scanIdentifierOrKeyword(tokenChars, nextTokenChar)) {
@@ -209,6 +208,15 @@ public class JackTokenizer {
     private void writeTokenInXml(TokenType tokenType, Object value) {
         String valueAsString = tokenType.equals(SYMBOL) ? ((Symbol) value).toEscapeString() : value.toString();
         writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
+    }
+
+    private boolean isNotStringConstant() {
+        return !STRING_CONST.equals(tokenType);
+    }
+
+    private boolean isEndOfLineReached() {
+        int nextPositionInLine = currentPositionInLine + 1;
+        return (nextPositionInLine == endOfLinePosition);
     }
 
     private boolean isSymbol(String tokenChars) {
