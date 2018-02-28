@@ -21,8 +21,8 @@ public class JackTokenizer {
 
     private boolean newLine;
     private String currentLine;
-    private int endOfLinePosition = -1;
     private int currentPositionInLine;
+    private int endOfLinePosition = -1;
 
     private TokenType tokenType;
     private Keyword keyword;
@@ -81,12 +81,6 @@ public class JackTokenizer {
                 continue;
             }
 
-            Keyword keyword = Keyword.fromString(token);
-            if (keyword != null) {
-                setToken(KEYWORD, keyword);
-                return;
-            }
-
             if (token.length() == 1) {
                 Symbol symbol = Symbol.fromString(token);
                 if (symbol != null) {
@@ -105,9 +99,15 @@ public class JackTokenizer {
             if (isIdentifier(token)) {
                 identifier = token;
                 if (isSpaceOrSymbol(nextTokenChar)) {
+                    Keyword keyword = Keyword.fromString(token);
+                    if (keyword != null) {
+                        setToken(KEYWORD, keyword);
+                        return;
+                    }
                     setToken(IDENTIFIER, identifier);
                     return;
                 }
+                continue;
             }
 
             if (isIntegerConstant(token)) {
@@ -117,6 +117,7 @@ public class JackTokenizer {
                     setToken(INT_CONST, intValue);
                     return;
                 }
+                continue;
             }
 
             if (isStringConstant(token)) {
@@ -128,6 +129,7 @@ public class JackTokenizer {
                     ++currentPositionInLine;
                     return;
                 }
+                continue;
             }
         }
     }
