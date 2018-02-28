@@ -98,38 +98,39 @@ public class JackTokenizer {
 
             if (isIdentifier(token)) {
                 identifier = token;
-                if (isSpaceOrSymbol(nextTokenChar)) {
-                    Keyword keyword = Keyword.fromString(token);
-                    if (keyword != null) {
-                        setToken(KEYWORD, keyword);
-                        return;
-                    }
-                    setToken(IDENTIFIER, identifier);
-                    return;
+                if (!isSpaceOrSymbol(nextTokenChar)) {
+                    continue;
                 }
-                continue;
+                Keyword keyword = Keyword.fromString(token);
+                if (keyword != null) {
+                    setToken(KEYWORD, keyword);
+                }
+                else {
+                    setToken(IDENTIFIER, identifier);
+                }
+                return;
             }
 
             if (isIntegerConstant(token)) {
                 intValue = Integer.valueOf(token);
-                checkIfIntValueIsValid();
-                if (isSpaceOrSymbol(nextTokenChar)) {
-                    setToken(INT_CONST, intValue);
-                    return;
+                if (!isSpaceOrSymbol(nextTokenChar)) {
+                    continue;
                 }
-                continue;
+                checkIfIntValueIsValid();
+                setToken(INT_CONST, intValue);
+                return;
             }
 
             if (isStringConstant(token)) {
                 stringValue = token;
                 tokenType = STRING_CONST;
-                if (nextTokenChar.equals(DOUBLE_QUOTE)) {
-                    stringValue = stringValue.substring(1, stringValue.length());
-                    setToken(STRING_CONST, stringValue);
-                    ++currentPositionInLine;
-                    return;
+                if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
+                    continue;
                 }
-                continue;
+                stringValue = stringValue.substring(1, stringValue.length());
+                setToken(STRING_CONST, stringValue);
+                ++currentPositionInLine;
+                return;
             }
         }
     }
