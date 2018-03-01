@@ -3,6 +3,8 @@ package com.sevenlist.nand2tetris.compiler.module;
 import java.io.*;
 import java.util.regex.Pattern;
 
+import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanStatus.CONTINUE_SCANNING_OF_TOKEN;
+import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanStatus.SCAN_NEXT_TOKEN;
 import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 
 public class JackTokenizer {
@@ -14,9 +16,6 @@ public class JackTokenizer {
     private static final Pattern LETTER_PATTERN = Pattern.compile("[a-zA-Z]+");
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("\\w+");
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
-
-    private static final boolean CONTINUE_SCANNING_OF_TOKEN = true;
-    private static final boolean SCAN_NEXT_TOKEN = false;
 
     private final CommentScanner commentScanner = new CommentScanner();
     private final BufferedReader jackTokenReader;
@@ -161,7 +160,7 @@ public class JackTokenizer {
         writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
     }
 
-    private boolean scanComments() {
+    private ScanStatus scanComments() {
         if (newLine) {
             if (commentScanner.isCommentOrWhitespace(currentLine)) {
                 tokenType = COMMENT_OR_EMPTY_LINE;
@@ -236,7 +235,7 @@ public class JackTokenizer {
         return tokenChars.length() == 1;
     }
 
-    private boolean scanSymbol(String tokenChars) {
+    private ScanStatus scanSymbol(String tokenChars) {
         Symbol symbol = Symbol.fromString(tokenChars);
         if (symbol == null) {
             return CONTINUE_SCANNING_OF_TOKEN;
@@ -251,7 +250,7 @@ public class JackTokenizer {
         return startsWithLetterOrUnderscore && containsLettersOrDigitsOrUnderscore;
     }
 
-    private boolean scanIdentifierOrKeyword(String tokenChars, String nextTokenChar) {
+    private ScanStatus scanIdentifierOrKeyword(String tokenChars, String nextTokenChar) {
         identifier = tokenChars;
         if (!isSpaceOrSymbol(nextTokenChar)) {
             return CONTINUE_SCANNING_OF_TOKEN;
@@ -271,7 +270,7 @@ public class JackTokenizer {
         return DIGIT_PATTERN.matcher(firstTokenChar).matches();
     }
 
-    private boolean scanIntegerConstant(String tokenChars, String nextTokenChar) {
+    private ScanStatus scanIntegerConstant(String tokenChars, String nextTokenChar) {
         intValue = Integer.valueOf(tokenChars);
         if (!isSpaceOrSymbol(nextTokenChar)) {
             return CONTINUE_SCANNING_OF_TOKEN;
@@ -285,7 +284,7 @@ public class JackTokenizer {
         return firstTokenChar.equals(DOUBLE_QUOTE);
     }
 
-    private boolean scanStringConstant(String tokenChars, String nextTokenChar) {
+    private ScanStatus scanStringConstant(String tokenChars, String nextTokenChar) {
         stringValue = tokenChars;
         tokenType = STRING_CONST;
         if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
@@ -320,5 +319,10 @@ public class JackTokenizer {
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    enum ScanStatus {
+        CONTINUE_SCANNING_OF_TOKEN,
+        SCAN_NEXT_TOKEN
     }
 }
