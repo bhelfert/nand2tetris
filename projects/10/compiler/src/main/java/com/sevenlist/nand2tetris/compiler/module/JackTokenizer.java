@@ -3,8 +3,7 @@ package com.sevenlist.nand2tetris.compiler.module;
 import java.io.*;
 import java.util.regex.Pattern;
 
-import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanStatus.CONTINUE_SCANNING_OF_TOKEN;
-import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanStatus.SCAN_NEXT_TOKEN;
+import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanMode.*;
 import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 
 public class JackTokenizer {
@@ -19,9 +18,9 @@ public class JackTokenizer {
 
     private final CommentScanner commentScanner = new CommentScanner();
     private final BufferedReader jackTokenReader;
-    private final BufferedWriter jackTokenWriter;
+    private BufferedWriter jackTokenWriter;
 
-    private boolean isNewLine;
+    private ScanMode scanMode;
     private String currentLine;
     private int currentPositionInLine;
     private int endOfLinePosition = -1;
@@ -35,23 +34,25 @@ public class JackTokenizer {
 
     public JackTokenizer(File jackFile) {
         jackTokenReader = createJackTokenReader(jackFile);
-        jackTokenWriter = createJackTokenWriter(jackFile);
-        writeLine("<tokens>");
+        openTokenFile(jackFile);
     }
 
+    // ugly code: method configures scanner as side effect
     public boolean hasMoreTokens() {
         if (hasCurrentLineMoreTokens()) {
+            configureScannerFor(CONTINUE_SCANNING_CURRENT_LINE);
             return true;
         }
 
         readNextLine();
 
         if (hasEndOfFileBeReached()) {
+            configureScannerFor(SCAN_NEXT_JACK_FILE);
             closeTokenFile();
             return false;
         }
 
-        initScannerForNewLine();
+        configureScannerFor(SCAN_NEW_LINE);
         return true;
     }
 
@@ -103,6 +104,17 @@ public class JackTokenizer {
         }
     }
 
+    private void openTokenFile(File jackFile) {
+        jackTokenWriter = createJackTokenWriter(jackFile);
+        writeLine("<tokens>");
+    }
+
+    private void closeTokenFile() {
+        writeLine("</tokens>");
+        close(jackTokenWriter);
+    }
+
+
     private BufferedWriter createJackTokenWriter(File jackFile) {
         File tokenFile = new File(jackFile.getPath().replace(".jack", "T.xml"));
         try {
@@ -114,9 +126,7 @@ public class JackTokenizer {
     }
 
     private boolean hasCurrentLineMoreTokens() {
-        boolean moreTokens = hasFirstLineOfNewFileBeRead() && !hasLineFullyBeScanned() && !isCommentLineOrEmptyLine();
-        isNewLine = !moreTokens;
-        return moreTokens;
+        return hasFirstLineOfNewFileBeRead() && !hasLineFullyBeScanned() && !isCommentLineOrEmptyLine();
     }
 
     private boolean hasFirstLineOfNewFileBeRead() {
@@ -133,7 +143,6 @@ public class JackTokenizer {
 
     private void readNextLine() {
         currentLine = readLine();
-        isNewLine = true;
     }
 
     private String readLine() {
@@ -155,12 +164,6 @@ public class JackTokenizer {
         return currentLine == null;
     }
 
-    private void closeTokenFile() {
-        endOfLinePosition = -1;
-        writeLine("</tokens>");
-        close(jackTokenWriter);
-    }
-
     private void writeLine(String line) {
         try {
             jackTokenWriter.write(line);
@@ -172,10 +175,19 @@ public class JackTokenizer {
         }
     }
 
-    private void initScannerForNewLine() {
-        currentPositionInLine = 0;
-        // make sure calling hasMoreTokens() works as expected when advance() is not called in between
-        endOfLinePosition = currentLine.length();
+    private void configureScannerFor(ScanMode scanMode) {
+        this.scanMode = scanMode;
+        switch (scanMode) {
+            case SCAN_NEXT_JACK_FILE:
+                endOfLinePosition = -1;
+                break;
+
+            case SCAN_NEW_LINE:
+                currentPositionInLine = 0;
+                // make sure calling hasMoreTokens() works as expected when advance() is not called in between
+                endOfLinePosition = currentLine.length();
+                break;
+        }
     }
 
     private void setToken(TokenType tokenType, Object value) {
@@ -194,8 +206,8 @@ public class JackTokenizer {
         writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
     }
 
-    private ScanStatus scanComments() {
-        if (isNewLine) {
+    private ScanMode scanComments() {
+        if (scanMode.equals(SCAN_NEW_LINE)) {
             if (commentScanner.isCommentOrWhitespace(currentLine)) {
                 tokenType = COMMENT_LINE_OR_EMPTY_LINE;
                 return SCAN_NEXT_TOKEN;
@@ -204,7 +216,7 @@ public class JackTokenizer {
             currentLine = commentScanner.stripComments(currentLine);
             endOfLinePosition = currentLine.length();
         }
-        return CONTINUE_SCANNING_OF_TOKEN;
+        return CONTINUE_SCANNING_TOKEN;
     }
 
     private void scanTokens() {
@@ -269,10 +281,10 @@ public class JackTokenizer {
         return tokenChars.length() == 1;
     }
 
-    private ScanStatus scanSymbol(String tokenChars) {
+    private ScanMode scanSymbol(String tokenChars) {
         Symbol symbol = Symbol.fromString(tokenChars);
         if (symbol == null) {
-            return CONTINUE_SCANNING_OF_TOKEN;
+            return CONTINUE_SCANNING_TOKEN;
         }
         setToken(SYMBOL, symbol);
         return SCAN_NEXT_TOKEN;
@@ -284,10 +296,10 @@ public class JackTokenizer {
         return startsWithLetterOrUnderscore && containsLettersOrDigitsOrUnderscore;
     }
 
-    private ScanStatus scanIdentifierOrKeyword(String tokenChars, String nextTokenChar) {
+    private ScanMode scanIdentifierOrKeyword(String tokenChars, String nextTokenChar) {
         identifier = tokenChars;
         if (!isSpaceOrSymbol(nextTokenChar)) {
-            return CONTINUE_SCANNING_OF_TOKEN;
+            return CONTINUE_SCANNING_TOKEN;
         }
 
         Keyword keyword = Keyword.fromString(tokenChars);
@@ -304,10 +316,10 @@ public class JackTokenizer {
         return DIGIT_PATTERN.matcher(firstTokenChar).matches();
     }
 
-    private ScanStatus scanIntegerConstant(String tokenChars, String nextTokenChar) {
+    private ScanMode scanIntegerConstant(String tokenChars, String nextTokenChar) {
         intValue = Integer.valueOf(tokenChars);
         if (!isSpaceOrSymbol(nextTokenChar)) {
-            return CONTINUE_SCANNING_OF_TOKEN;
+            return CONTINUE_SCANNING_TOKEN;
         }
         checkIfIntValueIsValid();
         setToken(INT_CONST, intValue);
@@ -318,11 +330,11 @@ public class JackTokenizer {
         return firstTokenChar.equals(DOUBLE_QUOTE);
     }
 
-    private ScanStatus scanStringConstant(String tokenChars, String nextTokenChar) {
+    private ScanMode scanStringConstant(String tokenChars, String nextTokenChar) {
         stringValue = tokenChars;
         tokenType = STRING_CONST;
         if (!nextTokenChar.equals(DOUBLE_QUOTE)) {
-            return CONTINUE_SCANNING_OF_TOKEN;
+            return CONTINUE_SCANNING_TOKEN;
         }
         stringValue = stringValue.substring(1, stringValue.length());
         setToken(STRING_CONST, stringValue);
@@ -355,8 +367,11 @@ public class JackTokenizer {
         }
     }
 
-    enum ScanStatus {
-        CONTINUE_SCANNING_OF_TOKEN,
-        SCAN_NEXT_TOKEN
+    enum ScanMode {
+        SCAN_NEXT_JACK_FILE,
+        SCAN_NEW_LINE,
+        CONTINUE_SCANNING_CURRENT_LINE,
+        SCAN_NEXT_TOKEN,
+        CONTINUE_SCANNING_TOKEN
     }
 }
