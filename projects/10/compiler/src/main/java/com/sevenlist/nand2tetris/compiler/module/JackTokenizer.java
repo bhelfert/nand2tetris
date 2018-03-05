@@ -21,7 +21,7 @@ public class JackTokenizer {
     private final BufferedReader jackTokenReader;
     private final BufferedWriter jackTokenWriter;
 
-    private boolean newLine;
+    private boolean isNewLine;
     private String currentLine;
     private int currentPositionInLine;
     private int endOfLinePosition = -1;
@@ -40,23 +40,18 @@ public class JackTokenizer {
     }
 
     public boolean hasMoreTokens() {
-        if (!COMMENT_OR_EMPTY_LINE.equals(tokenType) && (endOfLinePosition > -1)) {
-            if (currentPositionInLine < endOfLinePosition) {
-                newLine = false;
-                return true;
-            }
+        if (hasCurrentLineMoreTokens()) {
+            return true;
         }
-        currentLine = readLine();
-        newLine = true;
-        if (currentLine == null) {
-            endOfLinePosition = -1;
-            writeLine("</tokens>");
-            close(jackTokenWriter);
+
+        readNextLine();
+
+        if (hasEndOfFileBeReached()) {
+            closeTokenFile();
             return false;
         }
-        currentPositionInLine = 0;
-        // make sure calling hasMoreTokens() works as expected when advance() is not called in between
-        endOfLinePosition = currentLine.length();
+
+        initScannerForNewLine();
         return true;
     }
 
@@ -118,6 +113,29 @@ public class JackTokenizer {
         }
     }
 
+    private boolean hasCurrentLineMoreTokens() {
+        boolean moreTokens = hasFirstLineOfNewFileBeRead() && !hasLineFullyBeScanned() && !isCommentLineOrEmptyLine();
+        isNewLine = !moreTokens;
+        return moreTokens;
+    }
+
+    private boolean hasFirstLineOfNewFileBeRead() {
+        return endOfLinePosition > -1;
+    }
+
+    private boolean hasLineFullyBeScanned() {
+        return (currentPositionInLine == endOfLinePosition);
+    }
+
+    private boolean isCommentLineOrEmptyLine() {
+        return COMMENT_LINE_OR_EMPTY_LINE.equals(tokenType);
+    }
+
+    private void readNextLine() {
+        currentLine = readLine();
+        isNewLine = true;
+    }
+
     private String readLine() {
         String line;
         try {
@@ -133,6 +151,16 @@ public class JackTokenizer {
         return line;
     }
 
+    private boolean hasEndOfFileBeReached() {
+        return currentLine == null;
+    }
+
+    private void closeTokenFile() {
+        endOfLinePosition = -1;
+        writeLine("</tokens>");
+        close(jackTokenWriter);
+    }
+
     private void writeLine(String line) {
         try {
             jackTokenWriter.write(line);
@@ -142,6 +170,12 @@ public class JackTokenizer {
             close(jackTokenWriter);
             throw new RuntimeException("Could not write line [" + line + "] in .xml file", e);
         }
+    }
+
+    private void initScannerForNewLine() {
+        currentPositionInLine = 0;
+        // make sure calling hasMoreTokens() works as expected when advance() is not called in between
+        endOfLinePosition = currentLine.length();
     }
 
     private void setToken(TokenType tokenType, Object value) {
@@ -161,9 +195,9 @@ public class JackTokenizer {
     }
 
     private ScanStatus scanComments() {
-        if (newLine) {
+        if (isNewLine) {
             if (commentScanner.isCommentOrWhitespace(currentLine)) {
-                tokenType = COMMENT_OR_EMPTY_LINE;
+                tokenType = COMMENT_LINE_OR_EMPTY_LINE;
                 return SCAN_NEXT_TOKEN;
             }
             tokenType = null;

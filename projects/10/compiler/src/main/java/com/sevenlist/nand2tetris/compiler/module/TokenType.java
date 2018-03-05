@@ -7,7 +7,7 @@ public enum TokenType {
     IDENTIFIER,
     INT_CONST("integerConstant"),
     STRING_CONST("stringConstant"),
-    COMMENT_OR_EMPTY_LINE;
+    COMMENT_LINE_OR_EMPTY_LINE;
 
     private final String alternativeXmlTag;
 
