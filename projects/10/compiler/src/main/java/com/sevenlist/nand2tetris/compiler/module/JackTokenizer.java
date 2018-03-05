@@ -114,7 +114,6 @@ public class JackTokenizer {
         close(jackTokenWriter);
     }
 
-
     private BufferedWriter createJackTokenWriter(File jackFile) {
         File tokenFile = new File(jackFile.getPath().replace(".jack", "T.xml"));
         try {
