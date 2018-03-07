@@ -52,12 +52,12 @@ public class JackTokenizer {
             return false;
         }
 
-        configureScannerFor(SCAN_NEW_LINE);
+        configureScannerFor(SCAN_NEXT_LINE);
         return true;
     }
 
     public void advance() {
-        if (scanComments() == SCAN_NEXT_TOKEN) {
+        if (scanComments() == SCAN_NEXT_LINE) {
             return;
         }
         scanTokens();
@@ -181,7 +181,7 @@ public class JackTokenizer {
                 endOfLinePosition = -1;
                 break;
 
-            case SCAN_NEW_LINE:
+            case SCAN_NEXT_LINE:
                 currentPositionInLine = 0;
                 // make sure calling hasMoreTokens() works as expected when advance() is not called in between
                 endOfLinePosition = currentLine.length();
@@ -206,10 +206,10 @@ public class JackTokenizer {
     }
 
     private ScanMode scanComments() {
-        if (scanMode.equals(SCAN_NEW_LINE)) {
+        if (scanMode.equals(SCAN_NEXT_LINE)) {
             if (commentScanner.isCommentOrWhitespace(currentLine)) {
                 tokenType = COMMENT_LINE_OR_EMPTY_LINE;
-                return SCAN_NEXT_TOKEN;
+                return SCAN_NEXT_LINE;
             }
             tokenType = null;
             currentLine = commentScanner.stripComments(currentLine);
@@ -368,7 +368,7 @@ public class JackTokenizer {
 
     enum ScanMode {
         SCAN_NEXT_JACK_FILE,
-        SCAN_NEW_LINE,
+        SCAN_NEXT_LINE,
         CONTINUE_SCANNING_CURRENT_LINE,
         SCAN_NEXT_TOKEN,
         CONTINUE_SCANNING_TOKEN
