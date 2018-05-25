@@ -37,7 +37,7 @@ public class JackTokenizer {
         openTokenFile(jackFile);
     }
 
-    // ugly code: method configures scanner as side effect
+    // Very ugly code due to side effects: Method configures scanner and automatically closes the *T.xml file
     public boolean hasMoreTokens() {
         if (hasCurrentLineMoreTokens()) {
             configureScannerFor(CONTINUE_SCANNING_CURRENT_LINE);
