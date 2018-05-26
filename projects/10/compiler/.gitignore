@@ -4,4 +4,5 @@
 .gradle/
 build/
 out/
-src/test/resources/**/*T.xml
+src/test/resources/**/*.xml
+!src/test/resources/**/*.reference.xml
