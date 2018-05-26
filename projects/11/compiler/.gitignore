@@ -1,0 +1,8 @@
+.DS_Store
+.idea/
+*.iml
+.gradle/
+build/
+out/
+src/test/resources/**/*.vm
+!src/test/resources/**/*.reference.vm
