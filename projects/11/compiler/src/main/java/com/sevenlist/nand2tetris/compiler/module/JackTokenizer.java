@@ -18,7 +18,6 @@ public class JackTokenizer {
 
     private final CommentScanner commentScanner = new CommentScanner();
     private final BufferedReader jackTokenReader;
-    private BufferedWriter jackTokenWriter;
 
     private ScanMode scanMode;
     private String currentLine;
@@ -34,7 +33,6 @@ public class JackTokenizer {
 
     public JackTokenizer(File jackFile) {
         jackTokenReader = createJackTokenReader(jackFile);
-        openTokenFile(jackFile);
     }
 
     // Very ugly code due to side effects: Method configures scanner and automatically closes the *T.xml file
@@ -48,7 +46,6 @@ public class JackTokenizer {
 
         if (hasEndOfFileBeReached()) {
             configureScannerFor(SCAN_NEXT_JACK_FILE);
-            closeTokenFile();
             return false;
         }
 
@@ -104,16 +101,6 @@ public class JackTokenizer {
         }
     }
 
-    private void openTokenFile(File jackFile) {
-        jackTokenWriter = createJackTokenWriter(jackFile);
-        writeLine("<tokens>");
-    }
-
-    private void closeTokenFile() {
-        writeLine("</tokens>");
-        close(jackTokenWriter);
-    }
-
     private BufferedWriter createJackTokenWriter(File jackFile) {
         File tokenFile = new File(jackFile.getPath().replace(".jack", "T.xml"));
         try {
@@ -163,17 +150,6 @@ public class JackTokenizer {
         return currentLine == null;
     }
 
-    private void writeLine(String line) {
-        try {
-            jackTokenWriter.write(line);
-            jackTokenWriter.newLine();
-        }
-        catch (IOException e) {
-            close(jackTokenWriter);
-            throw new RuntimeException("Could not write line [" + line + "] in .xml file", e);
-        }
-    }
-
     private void configureScannerFor(ScanMode scanMode) {
         this.scanMode = scanMode;
         switch (scanMode) {
@@ -197,12 +173,6 @@ public class JackTokenizer {
         intValue = tokenType.equals(INT_CONST) ? (int) value : -1;
         stringValue = tokenType.equals(STRING_CONST) ? (String) value : null;
         ++currentPositionInLine;
-        writeTokenInXml(tokenType, value);
-    }
-
-    private void writeTokenInXml(TokenType tokenType, Object value) {
-        String valueAsString = tokenType.equals(SYMBOL) ? ((Symbol) value).toEscapeString() : value.toString();
-        writeLine("<" + tokenType + "> " + valueAsString + " </" + tokenType + ">");
     }
 
     private ScanMode scanComments() {
