@@ -7,7 +7,7 @@ import java.io.File;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 
-public class AssemblerIntegrationTest {
+public class AssemblerAcceptanceTest {
 
     private static final String SRC_TEST_RESOURCES_PATH = "src/test/resources/";
 
