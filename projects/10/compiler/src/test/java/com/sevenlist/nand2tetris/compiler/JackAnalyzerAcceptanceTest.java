@@ -6,7 +6,7 @@ import java.io.File;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class JackAnalyzerIntegrationTest {
+public class JackAnalyzerAcceptanceTest {
 
     private static final String SRC_TEST_RESOURCES_PATH = "src/test/resources/";
 
