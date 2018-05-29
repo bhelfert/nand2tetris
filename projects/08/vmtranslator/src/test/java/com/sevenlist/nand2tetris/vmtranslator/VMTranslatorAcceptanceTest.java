@@ -8,7 +8,7 @@ import java.io.InputStreamReader;
 
 import static org.junit.Assert.fail;
 
-public class VMTranslatorIntegrationTest {
+public class VMTranslatorAcceptanceTest {
 
     private static final String SRC_TEST_RESOURCES_PATH = "src/test/resources/";
 
