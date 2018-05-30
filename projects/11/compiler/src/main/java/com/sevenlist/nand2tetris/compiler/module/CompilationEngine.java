@@ -1,92 +1,86 @@
 package com.sevenlist.nand2tetris.compiler.module;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
+import static com.sevenlist.nand2tetris.compiler.module.Segment.CONSTANT;
+import static com.sevenlist.nand2tetris.compiler.module.Segment.TEMP;
 import static com.sevenlist.nand2tetris.compiler.module.Symbol.*;
 import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 
-// Needs refactoring.
+// Work in progress. Awful code, needs refactoring.
 public class CompilationEngine {
 
     private static Set<Keyword> KEYWORD_CONSTANTS = Stream.of(TRUE, FALSE, NULL, THIS).collect(Collectors.toSet());
-    private static Set<Symbol> OPERATORS = Stream.of(PLUS, MINUS, ASTERISK, SLASH, AMPERSAND, PIPE, LESS_THAN, GREATER_THAN, EQUAL_SIGN).collect(Collectors.toSet());
-    private static Set<Symbol> UNARY_OPERATORS = Stream.of(MINUS, TILDE).collect(Collectors.toSet());
 
-    private final File jackFile;
     private JackTokenizer tokenizer;
-    private BufferedWriter structuredCodeWriter;
     private boolean tokenConsumed = true;
-    private int indentLevel = 0;
+    private VMWriter vmWriter;
+
+    private String className;
+    private Deque<Operator> operatorStack = new ArrayDeque<>();
+    private int numberOfArguments = 0;
 
     public CompilationEngine(File jackFile) {
-        this.jackFile = jackFile;
         tokenizer = new JackTokenizer(jackFile);
+        vmWriter = new VMWriter(new File(jackFile.getPath().replace(".jack", ".vm")));
     }
 
     public void compileClass() {
-        openStructuredCodeFile();
         consumeKeyword(CLASS);
-        consumeIdentifier(); // className
+        className = consumeIdentifier();
         consumeSymbol(LEFT_CURLY_BRACE);
         while (!isNextTokenTheSymbol(RIGHT_CURLY_BRACE)) {
             compileClassVarDec();
             compileSubroutine();
         }
         consumeSymbol(RIGHT_CURLY_BRACE);
-        closeStructuredCodeFile();
 
+        vmWriter.close();
         // Hack: Process the tokens up to the end to (automatically) close the
         // generated *T.xml file.
-        while (tokenizer.hasMoreTokens()) {}
+        while (tokenizer.hasMoreTokens()) {
+        }
     }
 
-    public void compileClassVarDec() {
+    private void compileClassVarDec() {
         if (!isNextTokenOneOfKeywords(STATIC, FIELD)) {
             return;
         }
-        encloseWithXmlTag("classVarDec", () -> {
-            consumeKeyword(STATIC, FIELD);
-            consumeJackType();
+        consumeKeyword(STATIC, FIELD);
+        consumeJackType();
+        consumeIdentifier(); // varName
+        while (!isNextTokenTheSymbol(SEMICOLON)) {
+            consumeSymbol(COMMA);
             consumeIdentifier(); // varName
-            while (!isNextTokenTheSymbol(SEMICOLON)) {
-                consumeSymbol(COMMA);
-                consumeIdentifier(); // varName
-            }
-            consumeSymbol(SEMICOLON);
-        });
+        }
+        consumeSymbol(SEMICOLON);
     }
 
-    public void compileSubroutine() {
+    private void compileSubroutine() {
         if (!isNextTokenOneOfKeywords(CONSTRUCTOR, FUNCTION, METHOD)) {
             return;
         }
-        encloseWithXmlTag("subroutineDec", () -> {
-            consumeKeyword(CONSTRUCTOR, FUNCTION, METHOD);
-            if (isTokenOfType(KEYWORD) && tokenizer.keyword() == VOID) {
-                consumeKeyword(VOID);
-            }
-            else {
-                consumeJackType();
-            }
-            consumeIdentifier(); // subroutineName
-            consumeSymbol(LEFT_PARENTHESIS);
-            compileParameterList();
-            consumeSymbol(RIGHT_PARENTHESIS);
-            consumeSubroutineBody();
-        });
+        consumeKeyword(CONSTRUCTOR, FUNCTION, METHOD);
+        if (isTokenOfType(KEYWORD) && tokenizer.keyword() == VOID) {
+            consumeKeyword(VOID);
+        }
+        else {
+            consumeJackType();
+        }
+        String subroutineName = consumeIdentifier();
+        consumeSymbol(LEFT_PARENTHESIS);
+        compileParameterList();
+        consumeSymbol(RIGHT_PARENTHESIS);
+        vmWriter.writeFunction(createFunctionName(subroutineName), 0);
+        consumeSubroutineBody();
     }
 
-    public void compileParameterList() {
-        writeXmlStartTag("parameterList");
+    private void compileParameterList() {
         if (!isNextTokenOneOfKeywords(INT, CHAR, BOOLEAN) && !isTokenOfType(IDENTIFIER)) {
-            writeXmlEndTag("parameterList");
             return;
         }
         consumeJackType();
@@ -96,229 +90,163 @@ public class CompilationEngine {
             consumeJackType();
             consumeIdentifier(); // varName
         }
-        writeXmlEndTag("parameterList");
     }
 
-    public void compileVarDec() {
+    private void compileVarDec() {
         if (!isNextTokenOneOfKeywords(VAR)) {
             return;
         }
-        encloseWithXmlTag("varDec", () -> {
-            consumeKeyword(VAR);
-            consumeJackType();
+        consumeKeyword(VAR);
+        consumeJackType();
+        consumeIdentifier(); // varName
+        while (isNextTokenTheSymbol(COMMA)) {
+            consumeSymbol(COMMA);
             consumeIdentifier(); // varName
-            while (isNextTokenTheSymbol(COMMA)) {
-                consumeSymbol(COMMA);
-                consumeIdentifier(); // varName
+        }
+        consumeSymbol(SEMICOLON);
+    }
+
+    private void compileStatements() {
+        while (true) {
+            if (isNextTokenOneOfKeywords(LET)) {
+                compileLet();
             }
-            consumeSymbol(SEMICOLON);
-        });
-    }
-
-    public void compileStatements() {
-        encloseWithXmlTag("statements", () -> {
-            while (true) {
-                if (isNextTokenOneOfKeywords(LET)) {
-                    compileLet();
-                }
-                else if (isNextTokenOneOfKeywords(IF)) {
-                    compileIf();
-                }
-                else if (isNextTokenOneOfKeywords(WHILE)) {
-                    compileWhile();
-                }
-                else if (isNextTokenOneOfKeywords(DO)) {
-                    compileDo();
-                }
-                else if (isNextTokenOneOfKeywords(RETURN)) {
-                    compileReturn();
-                }
-                else {
-                    break;
-                }
+            else if (isNextTokenOneOfKeywords(IF)) {
+                compileIf();
             }
-        });
+            else if (isNextTokenOneOfKeywords(WHILE)) {
+                compileWhile();
+            }
+            else if (isNextTokenOneOfKeywords(DO)) {
+                compileDo();
+            }
+            else if (isNextTokenOneOfKeywords(RETURN)) {
+                compileReturn();
+            }
+            else {
+                break;
+            }
+        }
     }
 
-    public void compileDo() {
-        encloseWithXmlTag("doStatement", () -> {
-            consumeKeyword(DO);
-            consumeSubroutineCall(Optional.empty());
-            consumeSymbol(SEMICOLON);
-        });
+    private void compileDo() {
+        consumeKeyword(DO);
+        compileSubroutineCall(Optional.empty());
+        consumeSymbol(SEMICOLON);
     }
 
-    public void compileLet() {
-        encloseWithXmlTag("letStatement", () -> {
-            consumeKeyword(LET);
-            consumeIdentifier(); // varName
-            if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) {
+    private void compileLet() {
+        consumeKeyword(LET);
+        consumeIdentifier(); // varName
+        if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) {
+            consumeSymbol(LEFT_SQUARE_BRACKET);
+            compileExpression();
+            consumeSymbol(RIGHT_SQUARE_BRACKET);
+        }
+        consumeSymbol(EQUAL_SIGN);
+        compileExpression();
+        consumeSymbol(SEMICOLON);
+        compileOperatorsOnStack();
+    }
+
+    private void compileWhile() {
+        consumeKeyword(WHILE);
+        consumeSymbol(LEFT_PARENTHESIS);
+        compileExpression();
+        consumeSymbol(RIGHT_PARENTHESIS);
+        consumeStatementBlock();
+        compileOperatorsOnStack();
+    }
+
+    private void compileReturn() {
+        consumeKeyword(RETURN);
+        if (!isNextTokenTheSymbol(SEMICOLON)) {
+            compileExpression();
+            compileOperatorsOnStack();
+        }
+        else {
+            vmWriter.writePush(CONSTANT, 0);
+        }
+        consumeSymbol(SEMICOLON);
+        vmWriter.writeReturn();
+    }
+
+    private void compileIf() {
+        consumeKeyword(IF);
+        consumeSymbol(LEFT_PARENTHESIS);
+        compileExpression();
+        consumeSymbol(RIGHT_PARENTHESIS);
+        consumeStatementBlock();
+        if (isNextTokenOneOfKeywords(ELSE)) {
+            consumeKeyword(ELSE);
+            consumeStatementBlock();
+        }
+        compileOperatorsOnStack();
+    }
+
+    private void compileExpression() {
+        compileTerm();
+        while (isNextTokenABinaryOperator()) {
+            consumeBinaryOperator();
+            compileTerm();
+        }
+    }
+
+    private void compileTerm() {
+        nextTokenIfPreviousHasBeenConsumed();
+        if (isTokenOfType(INT_CONST)) {
+            compileIntegerConstant();
+        }
+        else if (isTokenOfType(STRING_CONST)) {
+            tokenConsumed();
+        }
+        else if (isTokenOneOfKeywordConstants()) {
+            tokenConsumed();
+        }
+        else if (isTokenOfType(IDENTIFIER)) {
+            String identifier = consumeIdentifier(); // varName or subroutineCall's subroutineName|className|varName
+            if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) { // varName[...]
                 consumeSymbol(LEFT_SQUARE_BRACKET);
                 compileExpression();
                 consumeSymbol(RIGHT_SQUARE_BRACKET);
             }
-            consumeSymbol(EQUAL_SIGN);
-            compileExpression();
-            consumeSymbol(SEMICOLON);
-        });
-    }
-
-    public void compileWhile() {
-        encloseWithXmlTag("whileStatement", () -> {
-            consumeKeyword(WHILE);
-            consumeSymbol(LEFT_PARENTHESIS);
-            compileExpression();
-            consumeSymbol(RIGHT_PARENTHESIS);
-            consumeStatementBlock();
-        });
-    }
-
-    public void compileReturn() {
-        encloseWithXmlTag("returnStatement", () -> {
-            consumeKeyword(RETURN);
-            if (!isNextTokenTheSymbol(SEMICOLON)) {
+            else {
+                compileSubroutineCall(Optional.of(identifier));
+            }
+        }
+        else if (isTokenOfType(SYMBOL)) {
+            if (tokenizer.symbol() == LEFT_PARENTHESIS) {
+                operatorStack.push(GroupingOperator.LEFT_PARENTHESIS);
+                consumeSymbol(LEFT_PARENTHESIS);
                 compileExpression();
+                while (operatorStack.contains(GroupingOperator.LEFT_PARENTHESIS)) {
+                    Operator operator = operatorStack.pop();
+                    if (operator == GroupingOperator.LEFT_PARENTHESIS) {
+                        break;
+                    }
+                    vmWriter.writeArithmetic(operator);
+                }
+                consumeSymbol(RIGHT_PARENTHESIS);
             }
-            consumeSymbol(SEMICOLON);
-        });
-    }
-
-    public void compileIf() {
-        encloseWithXmlTag("ifStatement", () -> {
-            consumeKeyword(IF);
-            consumeSymbol(LEFT_PARENTHESIS);
-            compileExpression();
-            consumeSymbol(RIGHT_PARENTHESIS);
-            consumeStatementBlock();
-            if (isNextTokenOneOfKeywords(ELSE)) {
-                consumeKeyword(ELSE);
-                consumeStatementBlock();
-            }
-        });
-    }
-
-    public void compileExpression() {
-        encloseWithXmlTag("expression", () -> {
-            compileTerm();
-            while (isNextTokenAnOperator()) {
-                consumeSymbol(tokenizer.symbol());
+            else if (UnaryOperator.isOperator(tokenizer.symbol())) {
+                compileUnaryOperator();
                 compileTerm();
             }
-        });
+        }
     }
 
-    public void compileTerm() {
-        encloseWithXmlTag("term", () -> {
-            nextTokenIfPreviousHasBeenConsumed();
-            if (tokenizer.tokenType() == INT_CONST) {
-                writeXmlElement(INT_CONST, tokenizer.intVal());
-                tokenConsumed();
-            }
-            else if (tokenizer.tokenType() == STRING_CONST) {
-                writeXmlElement(STRING_CONST, tokenizer.stringVal());
-                tokenConsumed();
-            }
-            else if (tokenizer.tokenType() == KEYWORD && KEYWORD_CONSTANTS.contains(tokenizer.keyword())) {
-                writeXmlElement(KEYWORD, tokenizer.keyword());
-                tokenConsumed();
-            }
-            else if (tokenizer.tokenType() == IDENTIFIER) {
-                String identifier = consumeIdentifier(); // varName or subroutineCall's subroutineName|className|varName
-                if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) { // varName[...]
-                    consumeSymbol(LEFT_SQUARE_BRACKET);
-                    compileExpression();
-                    consumeSymbol(RIGHT_SQUARE_BRACKET);
-                }
-                else {
-                    consumeSubroutineCall(Optional.of(identifier));
-                }
-            }
-            else if (tokenizer.tokenType() == SYMBOL) {
-                if (tokenizer.symbol() == LEFT_PARENTHESIS) {
-                    consumeSymbol(LEFT_PARENTHESIS);
-                    compileExpression();
-                    consumeSymbol(RIGHT_PARENTHESIS);
-                }
-                else if (UNARY_OPERATORS.contains(tokenizer.symbol())) {
-                    consumeSymbol(tokenizer.symbol());
-                    compileTerm();
-                }
-            }
-        });
-    }
-
-    public void compileExpressionList() {
-        encloseWithXmlTag("expressionList", () -> {
-            if (isNextTokenTheSymbol(RIGHT_PARENTHESIS)) {
-                return;
-            }
+    private void compileExpressionList() {
+        if (isNextTokenTheSymbol(RIGHT_PARENTHESIS)) {
+            return;
+        }
+        compileExpression();
+        ++numberOfArguments;
+        while (isNextTokenTheSymbol(COMMA)) {
+            consumeSymbol(COMMA);
             compileExpression();
-            while (isNextTokenTheSymbol(COMMA)) {
-                consumeSymbol(COMMA);
-                compileExpression();
-            }
-        });
-    }
-
-    private void openStructuredCodeFile() {
-        structuredCodeWriter = createStructuredCodeWriter(jackFile);
-        writeXmlStartTag("class");
-    }
-
-    private void closeStructuredCodeFile() {
-        writeXmlEndTag("class");
-        closeStructuredCodeWriter();
-    }
-
-    private BufferedWriter createStructuredCodeWriter(File jackFile) {
-        File structuredCodeFile = new File(jackFile.getPath().replace(".jack", ".xml"));
-        try {
-            return new BufferedWriter(new FileWriter(structuredCodeFile));
+            ++numberOfArguments;
         }
-        catch (IOException e) {
-            throw new RuntimeException("File [" + structuredCodeFile + "] cannot be created", e);
-        }
-    }
-
-    private void writeLine(String line) {
-        try {
-            structuredCodeWriter.write(line);
-            structuredCodeWriter.newLine();
-        }
-        catch (IOException e) {
-            closeStructuredCodeWriter();
-            throw new RuntimeException("Could not write line [" + line + "] in .xml file", e);
-        }
-    }
-
-    private void closeStructuredCodeWriter() {
-        try {
-            structuredCodeWriter.close();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void writeXmlStartTag(String tagName) {
-        writeXmlTag(tagName, false);
-        ++indentLevel;
-    }
-
-    private void writeXmlEndTag(String tagName) {
-        --indentLevel;
-        writeXmlTag(tagName, true);
-    }
-
-    private void writeXmlTag(String tagName, boolean closingTag) {
-        String spaces = (indentLevel > 0) ? String.format("%" + (indentLevel * 2) + "s", "") : "";
-        writeLine(spaces + "<" + (closingTag ? "/" : "") + tagName + ">");
-    }
-
-    private void writeXmlElement(TokenType elementTag, Object elementText) {
-        String elementTextAsString = elementTag.equals(SYMBOL) ? ((Symbol) elementText).toEscapeString() : elementText.toString();
-        String spaces = String.format("%" + (indentLevel * 2) + "s", "");
-        writeLine(spaces + "<" + elementTag + "> " + elementTextAsString + " </" + elementTag + ">");
+        compileOperatorsOnStack();
     }
 
     private boolean isNextTokenOneOfKeywords(Keyword... keywords) {
@@ -352,23 +280,13 @@ public class CompilationEngine {
                 throw new RuntimeException("Expected one of the keywords " + keywords + " while parsing, but got keyword [" + keyword + "]");
             }
         }
-        writeKeywordXmlElement();
         tokenConsumed();
-    }
-
-    private void writeKeywordXmlElement() {
-        writeXmlElement(KEYWORD, tokenizer.keyword());
     }
 
     private String consumeIdentifier() {
         nextTokenIfPreviousHasBeenConsumed();
-        writeIdentifierXmlElement();
         tokenConsumed();
         return tokenizer.identifier();
-    }
-
-    private void writeIdentifierXmlElement() {
-        writeXmlElement(IDENTIFIER, tokenizer.identifier());
     }
 
     private void consumeSymbol(Symbol expectedSymbol) {
@@ -377,7 +295,6 @@ public class CompilationEngine {
         if (symbol != expectedSymbol) {
             throw new RuntimeException("Expected symbol [" + expectedSymbol + "] while parsing, but got symbol [" + symbol + "]");
         }
-        writeXmlElement(SYMBOL, symbol);
         tokenConsumed();
     }
 
@@ -421,14 +338,12 @@ public class CompilationEngine {
     }
 
     private void consumeSubroutineBody() {
-        encloseWithXmlTag("subroutineBody", () -> {
-            consumeSymbol(LEFT_CURLY_BRACE);
-            while (isNextTokenOneOfKeywords(VAR)) {
-                compileVarDec();
-            }
-            compileStatements();
-            consumeSymbol(RIGHT_CURLY_BRACE);
-        });
+        consumeSymbol(LEFT_CURLY_BRACE);
+        while (isNextTokenOneOfKeywords(VAR)) {
+            compileVarDec();
+        }
+        compileStatements();
+        consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
     private void consumeStatementBlock() {
@@ -437,34 +352,61 @@ public class CompilationEngine {
         consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
-    private boolean isNextTokenAnOperator() {
+    private boolean isNextTokenABinaryOperator() {
         nextTokenIfPreviousHasBeenConsumed();
-        return (tokenizer.tokenType() == SYMBOL) && OPERATORS.contains(tokenizer.symbol());
+        return (tokenizer.tokenType() == SYMBOL) && BinaryOperator.isOperator(tokenizer.symbol());
     }
 
-    private void encloseWithXmlTag(String tagName, Runnable code) {
-        writeXmlStartTag(tagName);
-        code.run();
-        writeXmlEndTag(tagName);
-    }
-
-    private void consumeSubroutineCall(Optional<String> subroutineNameOrClassNameOrVarName) {
-        if (!subroutineNameOrClassNameOrVarName.isPresent()) {
-            consumeIdentifier();
-        }
+    private void compileSubroutineCall(Optional<String> subroutineNameOrClassNameOrVarName) {
+        String subroutineName = subroutineNameOrClassNameOrVarName.orElse(consumeIdentifier());
         if (isNextTokenTheSymbol(LEFT_PARENTHESIS)) { // with subroutineName left of parenthesis
             consumeExpressionListWithParenthesis();
         }
         else if (isNextTokenTheSymbol(DOT)) { // with className or varName left of dot
             consumeSymbol(DOT);
-            consumeIdentifier(); // subroutineName
+            subroutineName += DOT + consumeIdentifier();
             consumeExpressionListWithParenthesis();
         }
+        vmWriter.writeCall(subroutineName, numberOfArguments);
+        vmWriter.writePop(TEMP, 0);
+        numberOfArguments = 0;
     }
 
     private void consumeExpressionListWithParenthesis() {
         consumeSymbol(LEFT_PARENTHESIS);
         compileExpressionList();
         consumeSymbol(RIGHT_PARENTHESIS);
+    }
+
+    private String createFunctionName(String subroutineName) {
+        return className + "." + subroutineName;
+    }
+
+    private void consumeBinaryOperator() {
+        Symbol symbol = tokenizer.symbol();
+        operatorStack.push(BinaryOperator.fromSymbol(symbol));
+        consumeSymbol(symbol);
+    }
+
+    private void compileIntegerConstant() {
+        vmWriter.writePush(CONSTANT, tokenizer.intVal());
+        tokenConsumed();
+    }
+
+    private boolean isTokenOneOfKeywordConstants() {
+        return isTokenOfType(KEYWORD) && KEYWORD_CONSTANTS.contains(tokenizer.keyword());
+    }
+
+    private void compileUnaryOperator() {
+        Symbol symbol = tokenizer.symbol();
+        operatorStack.push(UnaryOperator.fromSymbol(symbol));
+        consumeSymbol(symbol);
+    }
+
+    private void compileOperatorsOnStack() {
+        while (!operatorStack.isEmpty()) {
+            Operator operator = operatorStack.pop();
+            vmWriter.writeArithmetic(operator);
+        }
     }
 }

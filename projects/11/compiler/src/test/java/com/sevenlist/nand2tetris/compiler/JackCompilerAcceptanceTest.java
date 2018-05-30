@@ -1,12 +1,13 @@
 package com.sevenlist.nand2tetris.compiler;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class JackCompilerIntegrationTest {
+public class JackCompilerAcceptanceTest {
 
     private static final String SRC_TEST_RESOURCES_PATH = "src/test/resources/";
 
@@ -15,11 +16,13 @@ public class JackCompilerIntegrationTest {
         compareVmFileFor("Seven/Main.jack");
     }
 
+    @Ignore
     @Test
     public void compileConvertToBin() {
         compareVmFileFor("ConvertToBin/Main.jack");
     }
 
+    @Ignore
     @Test
     public void compileSquare() {
         compareVmFileFor("Square/Main.jack");
@@ -27,11 +30,13 @@ public class JackCompilerIntegrationTest {
         compareVmFileFor("Square/SquareGame.jack");
     }
 
+    @Ignore
     @Test
     public void compileAverage() {
         compareVmFileFor("Average/Main.jack");
     }
 
+    @Ignore
     @Test
     public void compilePong() {
         compareVmFileFor("Pong/Ball.jack");
@@ -40,6 +45,7 @@ public class JackCompilerIntegrationTest {
         compareVmFileFor("Pong/PongGame.jack");
     }
 
+    @Ignore
     @Test
     public void compileComplexArrays() {
         compareVmFileFor("ComplexArrays/Main.jack");

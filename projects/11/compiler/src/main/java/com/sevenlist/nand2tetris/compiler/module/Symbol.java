@@ -20,37 +20,27 @@ public enum Symbol {
     MINUS("-"),
     ASTERISK("*"),
     SLASH("/"),
-    AMPERSAND("&", "&amp;"),
+    AMPERSAND("&"),
     PIPE("|"),
-    LESS_THAN("<", "&lt;"),
-    GREATER_THAN(">", "&gt;"),
+    LESS_THAN("<"),
+    GREATER_THAN(">"),
     EQUAL_SIGN("="),
     TILDE("~");
 
     private static final Map<String, Symbol> stringToEnum = Stream.of(values()).collect(toMap(Object::toString, e -> e));
 
     private final String character;
-    private final String xmlEscapeString;
 
     public static Symbol fromString(String character) {
         return stringToEnum.get(character);
     }
 
     Symbol(String character) {
-        this(character, null);
-    }
-
-    Symbol(String character, String xmlEscapeString) {
         this.character = character;
-        this.xmlEscapeString = xmlEscapeString;
     }
 
     @Override
     public String toString() {
         return character;
-    }
-
-    public String toEscapeString() {
-        return (xmlEscapeString == null) ? character : xmlEscapeString;
     }
 }
