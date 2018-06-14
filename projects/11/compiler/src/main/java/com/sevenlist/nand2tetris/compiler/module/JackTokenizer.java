@@ -101,16 +101,6 @@ public class JackTokenizer {
         }
     }
 
-    private BufferedWriter createJackTokenWriter(File jackFile) {
-        File tokenFile = new File(jackFile.getPath().replace(".jack", "T.xml"));
-        try {
-            return new BufferedWriter(new FileWriter(tokenFile));
-        }
-        catch (IOException e) {
-            throw new RuntimeException("File [" + tokenFile + "] cannot be created", e);
-        }
-    }
-
     private boolean hasCurrentLineMoreTokens() {
         return hasFirstLineOfNewFileBeRead() && !hasLineFullyBeScanned() && !isCommentLineOrEmptyLine();
     }

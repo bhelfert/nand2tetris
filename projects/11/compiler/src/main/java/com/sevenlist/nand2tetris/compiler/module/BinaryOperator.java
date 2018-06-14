@@ -33,11 +33,11 @@ public enum BinaryOperator implements Operator {
     }
 
     static BinaryOperator fromSymbol(Symbol symbol) {
-        return BinaryOperator.symbolToEnum.get(symbol);
+        return symbolToEnum.get(symbol);
     }
 
     static boolean isOperator(Symbol symbol) {
-        return BinaryOperator.symbolToEnum.containsKey(symbol);
+        return symbolToEnum.containsKey(symbol);
     }
 
     @Override

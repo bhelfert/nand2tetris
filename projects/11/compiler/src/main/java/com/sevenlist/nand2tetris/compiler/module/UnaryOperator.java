@@ -21,11 +21,11 @@ public enum UnaryOperator implements Operator {
     }
 
     static UnaryOperator fromSymbol(Symbol symbol) {
-        return UnaryOperator.symbolToEnum.get(symbol);
+        return symbolToEnum.get(symbol);
     }
 
     static boolean isOperator(Symbol symbol) {
-        return UnaryOperator.symbolToEnum.containsKey(symbol);
+        return symbolToEnum.containsKey(symbol);
     }
 
     @Override

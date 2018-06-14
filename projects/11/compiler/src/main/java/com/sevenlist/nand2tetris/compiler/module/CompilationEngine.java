@@ -6,23 +6,35 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
+import static com.sevenlist.nand2tetris.compiler.module.Kind.ARG;
+import static com.sevenlist.nand2tetris.compiler.module.Kind.VAR;
 import static com.sevenlist.nand2tetris.compiler.module.Segment.CONSTANT;
 import static com.sevenlist.nand2tetris.compiler.module.Segment.TEMP;
 import static com.sevenlist.nand2tetris.compiler.module.Symbol.*;
 import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
+import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NEG;
+import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NOT;
 
-// Work in progress. Awful code, needs refactoring.
+// Work in progress. Terribly messy code, needs to be cleaned up.
+
+/**
+ * Uses Dijkstra's <a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">Shunting Yard algorithm</a> to compile expressions.
+ */
 public class CompilationEngine {
 
-    private static Set<Keyword> KEYWORD_CONSTANTS = Stream.of(TRUE, FALSE, NULL, THIS).collect(Collectors.toSet());
+    private static Set<Keyword> KEYWORD_CONSTANTS = Stream.of(TRUE, FALSE, NULL).collect(Collectors.toSet());
 
     private JackTokenizer tokenizer;
     private boolean tokenConsumed = true;
     private VMWriter vmWriter;
 
     private String className;
+    private SymbolTable symbolTable = new SymbolTable();
     private Deque<Operator> operatorStack = new ArrayDeque<>();
-    private int numberOfArguments = 0;
+
+    private int numberOfArguments;
+    private int ifStatementInSubroutineCounter;
+    private int whileStatementInSubroutineCounter;
 
     public CompilationEngine(File jackFile) {
         tokenizer = new JackTokenizer(jackFile);
@@ -30,19 +42,22 @@ public class CompilationEngine {
     }
 
     public void compileClass() {
-        consumeKeyword(CLASS);
-        className = consumeIdentifier();
-        consumeSymbol(LEFT_CURLY_BRACE);
-        while (!isNextTokenTheSymbol(RIGHT_CURLY_BRACE)) {
-            compileClassVarDec();
-            compileSubroutine();
+        try {
+            consumeKeyword(CLASS);
+            className = consumeIdentifier();
+            consumeSymbol(LEFT_CURLY_BRACE);
+            while (!isNextTokenTheSymbol(RIGHT_CURLY_BRACE)) {
+                compileClassVarDec();
+                compileSubroutine();
+            }
+            consumeSymbol(RIGHT_CURLY_BRACE);
         }
-        consumeSymbol(RIGHT_CURLY_BRACE);
-
-        vmWriter.close();
-        // Hack: Process the tokens up to the end to (automatically) close the
-        // generated *T.xml file.
-        while (tokenizer.hasMoreTokens()) {
+        finally {
+            vmWriter.close();
+            // Hack: Process the tokens up to the end to (automatically) close the
+            // generated *T.xml file.
+            while (tokenizer.hasMoreTokens()) {
+            }
         }
     }
 
@@ -64,6 +79,7 @@ public class CompilationEngine {
         if (!isNextTokenOneOfKeywords(CONSTRUCTOR, FUNCTION, METHOD)) {
             return;
         }
+        symbolTable.startSubroutine();
         consumeKeyword(CONSTRUCTOR, FUNCTION, METHOD);
         if (isTokenOfType(KEYWORD) && tokenizer.keyword() == VOID) {
             consumeKeyword(VOID);
@@ -75,47 +91,50 @@ public class CompilationEngine {
         consumeSymbol(LEFT_PARENTHESIS);
         compileParameterList();
         consumeSymbol(RIGHT_PARENTHESIS);
-        vmWriter.writeFunction(createFunctionName(subroutineName), 0);
-        consumeSubroutineBody();
+        compileSubroutineBody(subroutineName);
     }
 
     private void compileParameterList() {
         if (!isNextTokenOneOfKeywords(INT, CHAR, BOOLEAN) && !isTokenOfType(IDENTIFIER)) {
             return;
         }
-        consumeJackType();
-        consumeIdentifier(); // varName
+        String paramType = consumeJackType();
+        String paramName = consumeIdentifier();
+        symbolTable.define(paramName, paramType, ARG);
         while (isNextTokenTheSymbol(COMMA)) {
             consumeSymbol(COMMA);
-            consumeJackType();
-            consumeIdentifier(); // varName
+            paramType = consumeJackType();
+            paramName = consumeIdentifier();
+            symbolTable.define(paramName, paramType, ARG);
         }
     }
 
     private void compileVarDec() {
-        if (!isNextTokenOneOfKeywords(VAR)) {
+        if (!isNextTokenOneOfKeywords(Keyword.VAR)) {
             return;
         }
-        consumeKeyword(VAR);
-        consumeJackType();
-        consumeIdentifier(); // varName
+        consumeKeyword(Keyword.VAR);
+        String varType = consumeJackType();
+        String varName = consumeIdentifier();
+        symbolTable.define(varName, varType, VAR);
         while (isNextTokenTheSymbol(COMMA)) {
             consumeSymbol(COMMA);
-            consumeIdentifier(); // varName
+            varName = consumeIdentifier();
+            symbolTable.define(varName, varType, VAR);
         }
         consumeSymbol(SEMICOLON);
     }
 
-    private void compileStatements() {
+    private void compileStatements(boolean nested) {
         while (true) {
             if (isNextTokenOneOfKeywords(LET)) {
                 compileLet();
             }
             else if (isNextTokenOneOfKeywords(IF)) {
-                compileIf();
+                compileIf(nested);
             }
             else if (isNextTokenOneOfKeywords(WHILE)) {
-                compileWhile();
+                compileWhile(nested);
             }
             else if (isNextTokenOneOfKeywords(DO)) {
                 compileDo();
@@ -132,12 +151,13 @@ public class CompilationEngine {
     private void compileDo() {
         consumeKeyword(DO);
         compileSubroutineCall(Optional.empty());
+        vmWriter.writePop(TEMP, 0);
         consumeSymbol(SEMICOLON);
     }
 
     private void compileLet() {
         consumeKeyword(LET);
-        consumeIdentifier(); // varName
+        String varName = consumeIdentifier();
         if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) {
             consumeSymbol(LEFT_SQUARE_BRACKET);
             compileExpression();
@@ -146,23 +166,30 @@ public class CompilationEngine {
         consumeSymbol(EQUAL_SIGN);
         compileExpression();
         consumeSymbol(SEMICOLON);
-        compileOperatorsOnStack();
+        vmWriter.writePop(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
     }
 
-    private void compileWhile() {
+    private void compileWhile(boolean asNestedWhileStatement) {
+        int labelNumber = ++whileStatementInSubroutineCounter - 1;
         consumeKeyword(WHILE);
         consumeSymbol(LEFT_PARENTHESIS);
+        vmWriter.writeLabel("WHILE_EXP" + labelNumber);
         compileExpression();
         consumeSymbol(RIGHT_PARENTHESIS);
-        consumeStatementBlock();
-        compileOperatorsOnStack();
+        vmWriter.writeArithmetic(NOT);
+        vmWriter.writeIf("WHILE_END" + labelNumber);
+        consumeStatementBlock(true);
+        vmWriter.writeGoto("WHILE_EXP" + labelNumber);
+        vmWriter.writeLabel("WHILE_END" + labelNumber);
+        if (asNestedWhileStatement) {
+            --whileStatementInSubroutineCounter;
+        }
     }
 
     private void compileReturn() {
         consumeKeyword(RETURN);
         if (!isNextTokenTheSymbol(SEMICOLON)) {
             compileExpression();
-            compileOperatorsOnStack();
         }
         else {
             vmWriter.writePush(CONSTANT, 0);
@@ -171,24 +198,47 @@ public class CompilationEngine {
         vmWriter.writeReturn();
     }
 
-    private void compileIf() {
+    private void compileIf(boolean asNestedIfStatement) {
+        int labelNumber = ++ifStatementInSubroutineCounter - 1;
         consumeKeyword(IF);
         consumeSymbol(LEFT_PARENTHESIS);
         compileExpression();
         consumeSymbol(RIGHT_PARENTHESIS);
-        consumeStatementBlock();
+        vmWriter.writeIf("IF_TRUE" + labelNumber);
+        vmWriter.writeGoto("IF_FALSE" + labelNumber);
+        vmWriter.writeLabel("IF_TRUE" + labelNumber);
+        consumeStatementBlock(true);
+        vmWriter.writeGoto("IF_END" + labelNumber);
+        vmWriter.writeLabel("IF_FALSE" + labelNumber);
         if (isNextTokenOneOfKeywords(ELSE)) {
             consumeKeyword(ELSE);
-            consumeStatementBlock();
+            consumeStatementBlock(true);
         }
-        compileOperatorsOnStack();
+        vmWriter.writeLabel("IF_END" + labelNumber);
+        if (asNestedIfStatement) {
+            --ifStatementInSubroutineCounter;
+        }
     }
 
     private void compileExpression() {
+        compileExpressionPoppingOperatorsOnStack(true);
+    }
+
+    private void compileGroupedExpression() {
+        compileExpressionPoppingOperatorsOnStack(false);
+    }
+
+    private void compileExpressionPoppingOperatorsOnStack(boolean popOperatorsOnStack) {
         compileTerm();
         while (isNextTokenABinaryOperator()) {
             consumeBinaryOperator();
             compileTerm();
+            if (popOperatorsOnStack) {
+                compileOperatorsOnStack();
+            }
+        }
+        if (popOperatorsOnStack) {
+            compileOperatorsOnStack();
         }
     }
 
@@ -200,12 +250,22 @@ public class CompilationEngine {
         else if (isTokenOfType(STRING_CONST)) {
             tokenConsumed();
         }
-        else if (isTokenOneOfKeywordConstants()) {
-            tokenConsumed();
+        else if (isTokenAnObjectReferenceOrAConstant()) {
+            if (isNextTokenOneOfKeywords(THIS)) {
+                // TODO
+                tokenConsumed();
+            }
+            else {
+                compileKeywordConstant();
+            }
         }
         else if (isTokenOfType(IDENTIFIER)) {
             String identifier = consumeIdentifier(); // varName or subroutineCall's subroutineName|className|varName
-            if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) { // varName[...]
+            int identifierIndex = symbolTable.indexOf(identifier);
+            if (identifierIndex > -1) {
+                vmWriter.writePush(symbolTable.kindOf(identifier).segment(), identifierIndex);
+            }
+            else if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) { // varName[...]
                 consumeSymbol(LEFT_SQUARE_BRACKET);
                 compileExpression();
                 consumeSymbol(RIGHT_SQUARE_BRACKET);
@@ -218,7 +278,7 @@ public class CompilationEngine {
             if (tokenizer.symbol() == LEFT_PARENTHESIS) {
                 operatorStack.push(GroupingOperator.LEFT_PARENTHESIS);
                 consumeSymbol(LEFT_PARENTHESIS);
-                compileExpression();
+                compileGroupedExpression();
                 while (operatorStack.contains(GroupingOperator.LEFT_PARENTHESIS)) {
                     Operator operator = operatorStack.pop();
                     if (operator == GroupingOperator.LEFT_PARENTHESIS) {
@@ -246,7 +306,6 @@ public class CompilationEngine {
             compileExpression();
             ++numberOfArguments;
         }
-        compileOperatorsOnStack();
     }
 
     private boolean isNextTokenOneOfKeywords(Keyword... keywords) {
@@ -262,7 +321,7 @@ public class CompilationEngine {
         return false;
     }
 
-    private void consumeKeyword(Keyword expectedKeyword, Keyword... otherPossibleKeywords) {
+    private Keyword consumeKeyword(Keyword expectedKeyword, Keyword... otherPossibleKeywords) {
         nextTokenIfPreviousHasBeenConsumed();
         Keyword keyword = tokenizer.keyword();
         if (keyword != expectedKeyword) {
@@ -281,6 +340,7 @@ public class CompilationEngine {
             }
         }
         tokenConsumed();
+        return keyword;
     }
 
     private String consumeIdentifier() {
@@ -315,12 +375,14 @@ public class CompilationEngine {
         tokenConsumed = true;
     }
 
-    private void consumeJackType() {
+    private String consumeJackType() {
         if (isTokenOfType(KEYWORD)) {
-            consumeKeyword(INT, CHAR, BOOLEAN);
+            Keyword primitiveType = consumeKeyword(INT, CHAR, BOOLEAN);
+            return primitiveType.toString();
         }
         else if (isTokenOfType(IDENTIFIER)) {
-            consumeIdentifier(); // className
+            String className = consumeIdentifier();
+            return className;
         }
         else {
             throw new RuntimeException("Expected token to be of type keyword or identifier, but got token of type [" + tokenizer.tokenType() + "]");
@@ -337,28 +399,31 @@ public class CompilationEngine {
         return (tokenizer.tokenType() == SYMBOL) && (tokenizer.symbol() == symbol);
     }
 
-    private void consumeSubroutineBody() {
+    private void compileSubroutineBody(String subroutineName) {
         consumeSymbol(LEFT_CURLY_BRACE);
-        while (isNextTokenOneOfKeywords(VAR)) {
+        while (isNextTokenOneOfKeywords(Keyword.VAR)) {
             compileVarDec();
         }
-        compileStatements();
+        vmWriter.writeFunction(createFunctionName(subroutineName), symbolTable.varCount(VAR));
+        ifStatementInSubroutineCounter = 0;
+        whileStatementInSubroutineCounter = 0;
+        compileStatements(false);
         consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
-    private void consumeStatementBlock() {
+    private void consumeStatementBlock(boolean nested) {
         consumeSymbol(LEFT_CURLY_BRACE);
-        compileStatements();
+        compileStatements(nested);
         consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
     private boolean isNextTokenABinaryOperator() {
         nextTokenIfPreviousHasBeenConsumed();
-        return (tokenizer.tokenType() == SYMBOL) && BinaryOperator.isOperator(tokenizer.symbol());
+        return isTokenOfType(SYMBOL) && BinaryOperator.isOperator(tokenizer.symbol());
     }
 
     private void compileSubroutineCall(Optional<String> subroutineNameOrClassNameOrVarName) {
-        String subroutineName = subroutineNameOrClassNameOrVarName.orElse(consumeIdentifier());
+        String subroutineName = subroutineNameOrClassNameOrVarName.orElseGet(() -> consumeIdentifier());
         if (isNextTokenTheSymbol(LEFT_PARENTHESIS)) { // with subroutineName left of parenthesis
             consumeExpressionListWithParenthesis();
         }
@@ -368,7 +433,6 @@ public class CompilationEngine {
             consumeExpressionListWithParenthesis();
         }
         vmWriter.writeCall(subroutineName, numberOfArguments);
-        vmWriter.writePop(TEMP, 0);
         numberOfArguments = 0;
     }
 
@@ -389,12 +453,16 @@ public class CompilationEngine {
     }
 
     private void compileIntegerConstant() {
-        vmWriter.writePush(CONSTANT, tokenizer.intVal());
+        vmWriter.writePush(CONSTANT, Math.abs(tokenizer.intVal()));
+        if (tokenizer.intVal() < 0) {
+            vmWriter.writeArithmetic(NEG);
+        }
         tokenConsumed();
     }
 
-    private boolean isTokenOneOfKeywordConstants() {
-        return isTokenOfType(KEYWORD) && KEYWORD_CONSTANTS.contains(tokenizer.keyword());
+    private boolean isTokenAnObjectReferenceOrAConstant() {
+        return isNextTokenOneOfKeywords(THIS)
+                || (isTokenOfType(KEYWORD) && KEYWORD_CONSTANTS.contains(tokenizer.keyword()));
     }
 
     private void compileUnaryOperator() {
@@ -408,5 +476,14 @@ public class CompilationEngine {
             Operator operator = operatorStack.pop();
             vmWriter.writeArithmetic(operator);
         }
+    }
+
+    private void compileKeywordConstant() {
+        vmWriter.writePush(CONSTANT, 0);
+        if (isNextTokenOneOfKeywords(TRUE)) {
+            // true == -1, i.e. ~(0000 0000) = 1111 1111
+            vmWriter.writeArithmetic(NOT);
+        }
+        tokenConsumed();
     }
 }

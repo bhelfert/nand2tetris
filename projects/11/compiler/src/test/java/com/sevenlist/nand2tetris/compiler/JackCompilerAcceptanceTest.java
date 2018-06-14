@@ -16,7 +16,6 @@ public class JackCompilerAcceptanceTest {
         compareVmFileFor("Seven/Main.jack");
     }
 
-    @Ignore
     @Test
     public void compileConvertToBin() {
         compareVmFileFor("ConvertToBin/Main.jack");
@@ -60,6 +59,6 @@ public class JackCompilerAcceptanceTest {
     }
 
     private void compile(String relativePathToSourceFile) {
-        new JackCompiler(new String[] { SRC_TEST_RESOURCES_PATH + relativePathToSourceFile }).compile();
+        new JackCompiler(new String[]{SRC_TEST_RESOURCES_PATH + relativePathToSourceFile}).compile();
     }
 }
