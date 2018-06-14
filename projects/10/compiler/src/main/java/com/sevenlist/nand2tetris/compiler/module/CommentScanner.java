@@ -27,6 +27,7 @@ class CommentScanner {
     }
 
     String stripComments(String s) {
+        s = s.trim();
         s = stripCommentsUntilClosing(s);
         s = stripCommentToEndOfLine(s);
         return s;
