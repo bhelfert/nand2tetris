@@ -6,10 +6,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
+import static com.sevenlist.nand2tetris.compiler.module.Keyword.STATIC;
+import static com.sevenlist.nand2tetris.compiler.module.Keyword.THIS;
 import static com.sevenlist.nand2tetris.compiler.module.Kind.ARG;
 import static com.sevenlist.nand2tetris.compiler.module.Kind.VAR;
-import static com.sevenlist.nand2tetris.compiler.module.Segment.CONSTANT;
-import static com.sevenlist.nand2tetris.compiler.module.Segment.TEMP;
+import static com.sevenlist.nand2tetris.compiler.module.Segment.*;
 import static com.sevenlist.nand2tetris.compiler.module.Symbol.*;
 import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NEG;
@@ -65,12 +66,15 @@ public class CompilationEngine {
         if (!isNextTokenOneOfKeywords(STATIC, FIELD)) {
             return;
         }
-        consumeKeyword(STATIC, FIELD);
-        consumeJackType();
-        consumeIdentifier(); // varName
+        Keyword keyword = consumeKeyword(STATIC, FIELD);
+        Kind kind = Kind.valueOf(keyword.name());
+        String classVarType = consumeJackType();
+        String classVarName = consumeIdentifier();
+        symbolTable.define(classVarName, classVarType, kind);
         while (!isNextTokenTheSymbol(SEMICOLON)) {
             consumeSymbol(COMMA);
-            consumeIdentifier(); // varName
+            classVarName = consumeIdentifier();
+            symbolTable.define(classVarName, classVarType, kind);
         }
         consumeSymbol(SEMICOLON);
     }
@@ -80,7 +84,7 @@ public class CompilationEngine {
             return;
         }
         symbolTable.startSubroutine();
-        consumeKeyword(CONSTRUCTOR, FUNCTION, METHOD);
+        Keyword keyword = consumeKeyword(CONSTRUCTOR, FUNCTION, METHOD);
         if (isTokenOfType(KEYWORD) && tokenizer.keyword() == VOID) {
             consumeKeyword(VOID);
         }
@@ -91,7 +95,7 @@ public class CompilationEngine {
         consumeSymbol(LEFT_PARENTHESIS);
         compileParameterList();
         consumeSymbol(RIGHT_PARENTHESIS);
-        compileSubroutineBody(subroutineName);
+        compileSubroutineBody(keyword, subroutineName);
     }
 
     private void compileParameterList() {
@@ -125,16 +129,16 @@ public class CompilationEngine {
         consumeSymbol(SEMICOLON);
     }
 
-    private void compileStatements(boolean nested) {
+    private void compileStatements() {
         while (true) {
             if (isNextTokenOneOfKeywords(LET)) {
                 compileLet();
             }
             else if (isNextTokenOneOfKeywords(IF)) {
-                compileIf(nested);
+                compileIf();
             }
             else if (isNextTokenOneOfKeywords(WHILE)) {
-                compileWhile(nested);
+                compileWhile();
             }
             else if (isNextTokenOneOfKeywords(DO)) {
                 compileDo();
@@ -169,7 +173,7 @@ public class CompilationEngine {
         vmWriter.writePop(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
     }
 
-    private void compileWhile(boolean asNestedWhileStatement) {
+    private void compileWhile() {
         int labelNumber = ++whileStatementInSubroutineCounter - 1;
         consumeKeyword(WHILE);
         consumeSymbol(LEFT_PARENTHESIS);
@@ -178,12 +182,9 @@ public class CompilationEngine {
         consumeSymbol(RIGHT_PARENTHESIS);
         vmWriter.writeArithmetic(NOT);
         vmWriter.writeIf("WHILE_END" + labelNumber);
-        consumeStatementBlock(true);
+        consumeStatementBlock();
         vmWriter.writeGoto("WHILE_EXP" + labelNumber);
         vmWriter.writeLabel("WHILE_END" + labelNumber);
-        if (asNestedWhileStatement) {
-            --whileStatementInSubroutineCounter;
-        }
     }
 
     private void compileReturn() {
@@ -198,7 +199,7 @@ public class CompilationEngine {
         vmWriter.writeReturn();
     }
 
-    private void compileIf(boolean asNestedIfStatement) {
+    private void compileIf() {
         int labelNumber = ++ifStatementInSubroutineCounter - 1;
         consumeKeyword(IF);
         consumeSymbol(LEFT_PARENTHESIS);
@@ -207,16 +208,15 @@ public class CompilationEngine {
         vmWriter.writeIf("IF_TRUE" + labelNumber);
         vmWriter.writeGoto("IF_FALSE" + labelNumber);
         vmWriter.writeLabel("IF_TRUE" + labelNumber);
-        consumeStatementBlock(true);
-        vmWriter.writeGoto("IF_END" + labelNumber);
+        consumeStatementBlock();
+        if (isNextTokenOneOfKeywords(ELSE)) {
+            vmWriter.writeGoto("IF_END" + labelNumber);
+        }
         vmWriter.writeLabel("IF_FALSE" + labelNumber);
         if (isNextTokenOneOfKeywords(ELSE)) {
             consumeKeyword(ELSE);
-            consumeStatementBlock(true);
-        }
-        vmWriter.writeLabel("IF_END" + labelNumber);
-        if (asNestedIfStatement) {
-            --ifStatementInSubroutineCounter;
+            consumeStatementBlock();
+            vmWriter.writeLabel("IF_END" + labelNumber);
         }
     }
 
@@ -252,7 +252,7 @@ public class CompilationEngine {
         }
         else if (isTokenAnObjectReferenceOrAConstant()) {
             if (isNextTokenOneOfKeywords(THIS)) {
-                // TODO
+                vmWriter.writePush(POINTER, 0);
                 tokenConsumed();
             }
             else {
@@ -399,21 +399,34 @@ public class CompilationEngine {
         return (tokenizer.tokenType() == SYMBOL) && (tokenizer.symbol() == symbol);
     }
 
-    private void compileSubroutineBody(String subroutineName) {
+    private void compileSubroutineBody(Keyword keyword, String subroutineName) {
         consumeSymbol(LEFT_CURLY_BRACE);
         while (isNextTokenOneOfKeywords(Keyword.VAR)) {
             compileVarDec();
         }
-        vmWriter.writeFunction(createFunctionName(subroutineName), symbolTable.varCount(VAR));
+        int nLocals = (keyword == CONSTRUCTOR) ? 0 : symbolTable.varCount(VAR);
+        vmWriter.writeFunction(createFunctionName(subroutineName), nLocals);
+        switch (keyword) {
+            case CONSTRUCTOR:
+                vmWriter.writePush(CONSTANT, symbolTable.varCount(Kind.FIELD));
+                vmWriter.writeCall("Memory.alloc", 1);
+                vmWriter.writePop(POINTER, 0);
+                break;
+
+            case METHOD:
+                vmWriter.writePush(ARGUMENT, 0);
+                vmWriter.writePop(POINTER, 0);
+                break;
+        }
         ifStatementInSubroutineCounter = 0;
         whileStatementInSubroutineCounter = 0;
-        compileStatements(false);
+        compileStatements();
         consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
-    private void consumeStatementBlock(boolean nested) {
+    private void consumeStatementBlock() {
         consumeSymbol(LEFT_CURLY_BRACE);
-        compileStatements(nested);
+        compileStatements();
         consumeSymbol(RIGHT_CURLY_BRACE);
     }
 
@@ -425,9 +438,18 @@ public class CompilationEngine {
     private void compileSubroutineCall(Optional<String> subroutineNameOrClassNameOrVarName) {
         String subroutineName = subroutineNameOrClassNameOrVarName.orElseGet(() -> consumeIdentifier());
         if (isNextTokenTheSymbol(LEFT_PARENTHESIS)) { // with subroutineName left of parenthesis
+            vmWriter.writePush(POINTER, 0);
+            subroutineName = className + DOT + subroutineName;
+            ++numberOfArguments;
             consumeExpressionListWithParenthesis();
         }
         else if (isNextTokenTheSymbol(DOT)) { // with className or varName left of dot
+            String objectType = symbolTable.typeOf(subroutineName);
+            if (objectType != null) {
+                vmWriter.writePush(symbolTable.kindOf(subroutineName).segment(), symbolTable.indexOf(subroutineName));
+                subroutineName = objectType;
+                ++numberOfArguments;
+            }
             consumeSymbol(DOT);
             subroutineName += DOT + consumeIdentifier();
             consumeExpressionListWithParenthesis();

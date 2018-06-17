@@ -56,7 +56,7 @@ public class SymbolTable {
         if (classScope.containsKey(name)) {
             return classScope.get(name).kind;
         }
-        throw new IllegalArgumentException("Symbol [" + name + "] is unknown");
+        return null;
     }
 
     public String typeOf(String name) {
@@ -66,7 +66,7 @@ public class SymbolTable {
         if (classScope.containsKey(name)) {
             return classScope.get(name).type;
         }
-        throw new IllegalArgumentException("Symbol [" + name + "] is unknown");
+        return null;
     }
 
     public int indexOf(String name) {

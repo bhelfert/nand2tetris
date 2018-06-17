@@ -21,7 +21,6 @@ public class JackCompilerAcceptanceTest {
         compareVmFileFor("ConvertToBin/Main.jack");
     }
 
-    @Ignore
     @Test
     public void compileSquare() {
         compareVmFileFor("Square/Main.jack");
