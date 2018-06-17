@@ -34,6 +34,7 @@ public class CompilationEngine {
     private SymbolTable symbolTable = new SymbolTable();
     private Deque<Operator> operatorStack = new ArrayDeque<>();
 
+    private boolean methodBody;
     private int numberOfArguments;
     private int ifStatementInSubroutineCounter;
     private int whileStatementInSubroutineCounter;
@@ -176,7 +177,7 @@ public class CompilationEngine {
         consumeSymbol(SEMICOLON);
         if (arrayAssignment) {
             vmWriter.writePop(TEMP, 0); // pop the expression's value and store it in TEMP 0
-            vmWriter.writePop(POINTER, 1); // pop the array index calculated before and store it in POINTER 1, such setting to what memory address THAT points to
+            vmWriter.writePop(POINTER, 1); // pop the array index calculated before and store it in POINTER 1, i.e. aligning THAT to the heap area beginning at that address
             vmWriter.writePush(TEMP, 0); // push the expression's value onto the stack again
             vmWriter.writePop(THAT, 0); // pop it and store it in THAT
         }
@@ -262,7 +263,7 @@ public class CompilationEngine {
         else if (isTokenOfType(STRING_CONST)) {
             compileStringConstant();
         }
-        else if (isTokenAnObjectReferenceOrAConstant()) {
+        else if (isTokenTheThisPointerOrAKeywordConstant()) {
             if (isNextTokenOneOfKeywords(THIS)) {
                 vmWriter.writePush(POINTER, 0);
                 tokenConsumed();
@@ -281,11 +282,19 @@ public class CompilationEngine {
                     compileGroupedExpression();
                     consumeSymbol(RIGHT_SQUARE_BRACKET);
                 }
-                vmWriter.writePush(symbolTable.kindOf(identifier).segment(), identifierIndex);
+                if (methodBody && (symbolTable.kindOf(identifier) == ARG)) {
+                    ++identifierIndex;
+                }
+                if (!isNextTokenTheSymbol(DOT)) {
+                    vmWriter.writePush(symbolTable.kindOf(identifier).segment(), identifierIndex);
+                }
                 if (arrayExpression) {
                     vmWriter.writeArithmetic(ADD);
                     vmWriter.writePop(POINTER, 1);
                     vmWriter.writePush(THAT, 0);
+                }
+                else if (isNextTokenTheSymbol(DOT)) {
+                    compileSubroutineCall(Optional.of(identifier));
                 }
             }
             else {
@@ -432,6 +441,7 @@ public class CompilationEngine {
                 break;
 
             case METHOD:
+                methodBody = true;
                 vmWriter.writePush(ARGUMENT, 0);
                 vmWriter.writePop(POINTER, 0);
                 break;
@@ -440,6 +450,7 @@ public class CompilationEngine {
         whileStatementInSubroutineCounter = 0;
         compileStatements();
         consumeSymbol(RIGHT_CURLY_BRACE);
+        methodBody = false;
     }
 
     private void consumeStatementBlock() {
@@ -500,7 +511,7 @@ public class CompilationEngine {
         tokenConsumed();
     }
 
-    private boolean isTokenAnObjectReferenceOrAConstant() {
+    private boolean isTokenTheThisPointerOrAKeywordConstant() {
         return isNextTokenOneOfKeywords(THIS)
                 || (isTokenOfType(KEYWORD) && KEYWORD_CONSTANTS.contains(tokenizer.keyword()));
     }
