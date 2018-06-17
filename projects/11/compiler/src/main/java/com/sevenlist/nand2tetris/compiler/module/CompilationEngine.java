@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.sevenlist.nand2tetris.compiler.module.BinaryOperator.ADD;
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.STATIC;
 import static com.sevenlist.nand2tetris.compiler.module.Keyword.THIS;
@@ -162,15 +163,26 @@ public class CompilationEngine {
     private void compileLet() {
         consumeKeyword(LET);
         String varName = consumeIdentifier();
-        if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) {
+        boolean arrayAssignment = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
+        if (arrayAssignment) {
             consumeSymbol(LEFT_SQUARE_BRACKET);
             compileExpression();
             consumeSymbol(RIGHT_SQUARE_BRACKET);
+            vmWriter.writePush(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
+            vmWriter.writeArithmetic(ADD);
         }
         consumeSymbol(EQUAL_SIGN);
         compileExpression();
         consumeSymbol(SEMICOLON);
-        vmWriter.writePop(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
+        if (arrayAssignment) {
+            vmWriter.writePop(TEMP, 0); // pop the expression's value and store it in TEMP 0
+            vmWriter.writePop(POINTER, 1); // pop the array index calculated before and store it in POINTER 1, such setting to what memory address THAT points to
+            vmWriter.writePush(TEMP, 0); // push the expression's value onto the stack again
+            vmWriter.writePop(THAT, 0); // pop it and store it in THAT
+        }
+        else {
+            vmWriter.writePop(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
+        }
     }
 
     private void compileWhile() {
@@ -248,7 +260,7 @@ public class CompilationEngine {
             compileIntegerConstant();
         }
         else if (isTokenOfType(STRING_CONST)) {
-            tokenConsumed();
+            compileStringConstant();
         }
         else if (isTokenAnObjectReferenceOrAConstant()) {
             if (isNextTokenOneOfKeywords(THIS)) {
@@ -263,12 +275,18 @@ public class CompilationEngine {
             String identifier = consumeIdentifier(); // varName or subroutineCall's subroutineName|className|varName
             int identifierIndex = symbolTable.indexOf(identifier);
             if (identifierIndex > -1) {
+                boolean arrayExpression = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
+                if (arrayExpression) { // varName[...]
+                    consumeSymbol(LEFT_SQUARE_BRACKET);
+                    compileGroupedExpression();
+                    consumeSymbol(RIGHT_SQUARE_BRACKET);
+                }
                 vmWriter.writePush(symbolTable.kindOf(identifier).segment(), identifierIndex);
-            }
-            else if (isNextTokenTheSymbol(LEFT_SQUARE_BRACKET)) { // varName[...]
-                consumeSymbol(LEFT_SQUARE_BRACKET);
-                compileExpression();
-                consumeSymbol(RIGHT_SQUARE_BRACKET);
+                if (arrayExpression) {
+                    vmWriter.writeArithmetic(ADD);
+                    vmWriter.writePop(POINTER, 1);
+                    vmWriter.writePush(THAT, 0);
+                }
             }
             else {
                 compileSubroutineCall(Optional.of(identifier));
@@ -505,6 +523,18 @@ public class CompilationEngine {
         if (isNextTokenOneOfKeywords(TRUE)) {
             // true == -1, i.e. ~(0000 0000) = 1111 1111
             vmWriter.writeArithmetic(NOT);
+        }
+        tokenConsumed();
+    }
+
+    private void compileStringConstant() {
+        String s = tokenizer.stringVal();
+        vmWriter.writePush(CONSTANT, s.length());
+        vmWriter.writeCall("String.new", 1);
+        char[] chars = s.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            vmWriter.writePush(CONSTANT, (int) chars[i]);
+            vmWriter.writeCall("String.appendChar", 2);
         }
         tokenConsumed();
     }

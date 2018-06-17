@@ -28,7 +28,6 @@ public class JackCompilerAcceptanceTest {
         compareVmFileFor("Square/SquareGame.jack");
     }
 
-    @Ignore
     @Test
     public void compileAverage() {
         compareVmFileFor("Average/Main.jack");
