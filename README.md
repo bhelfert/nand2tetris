@@ -12,7 +12,7 @@ The [computer](https://github.com/sevenlist/nand2tetris/blob/master/projects/05/
 * [Memory Elements, incl. PC](https://github.com/sevenlist/nand2tetris/tree/master/projects/03)
 * [CPU, Keyboard, Screen](https://github.com/sevenlist/nand2tetris/tree/master/projects/05)
 
-using only NAND gates and data flip-flops (DFFs) as atomic, primitive, building blocks. A clock is provided by the simulator and emulators.
+using only NAND gates and data flip-flops (DFFs) as atomic, primitive building blocks. A clock is provided by the simulator and emulators.
 
 All chips are implemented using this [Hardware Description Language](http://www.nand2tetris.org/chapters/appendix%20A.pdf) (HDL).
 
@@ -21,7 +21,7 @@ All chips are implemented using this [Hardware Description Language](http://www.
 * Assembly: [Multiply two numbers](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/mult/mult.asm); [blacken/whiten the screen](https://github.com/sevenlist/nand2tetris/blob/master/projects/04/fill/Fill.asm)
 * Jack: ["Hello \<name\>!"](https://github.com/sevenlist/nand2tetris/tree/master/projects/09/greetme)
 
-# Software Hierarchy
+# Software Hierarchy (for "Jack")
 
 * [Assembler](https://github.com/sevenlist/nand2tetris/tree/master/projects/06/assembler)
 * [Virtual Machine Translator](https://github.com/sevenlist/nand2tetris/tree/master/projects/08/vmtranslator)
