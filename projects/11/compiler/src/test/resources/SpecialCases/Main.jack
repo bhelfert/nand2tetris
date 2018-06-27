@@ -1,0 +1,12 @@
+class Main {
+
+   function void main() {
+     var Array a;
+     let a[1 + Main.double(2)] = 5;
+     return;
+   }
+
+   function int double(int a) {
+     return a * 2;
+   }
+}

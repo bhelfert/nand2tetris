@@ -17,7 +17,7 @@ import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NEG;
 import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NOT;
 
-// Terribly messy code, needs to be cleaned up.
+// Messy code, needs clean up.
 
 /**
  * Uses Dijkstra's <a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">Shunting Yard algorithm</a> to compile expressions.
@@ -25,6 +25,7 @@ import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NOT;
 public class CompilationEngine {
 
     private static Set<Keyword> KEYWORD_CONSTANTS = Stream.of(TRUE, FALSE, NULL).collect(Collectors.toSet());
+    private static final int AFTER_PREFIX_LEFT_INDEX = 4;
 
     private JackTokenizer tokenizer;
     private boolean tokenConsumed = true;
@@ -295,18 +296,16 @@ public class CompilationEngine {
     private void compileLet() {
         consumeKeyword(LET);
         String varName = consumeIdentifier();
-        boolean arrayAssignment = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
-        if (arrayAssignment) {
-            consumeSymbol(LEFT_SQUARE_BRACKET);
-            compileExpression();
-            consumeSymbol(RIGHT_SQUARE_BRACKET);
+        boolean array = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
+        if (array) {
+            compileArrayExpression();
             vmWriter.writePush(symbolTable.kindOf(varName).segment(), symbolTable.indexOf(varName));
             vmWriter.writeArithmetic(ADD);
         }
         consumeSymbol(EQUAL_SIGN);
         compileExpression();
         consumeSymbol(SEMICOLON);
-        if (arrayAssignment) {
+        if (array) {
             vmWriter.writePop(TEMP, 0); // pop the expression's value and store it in TEMP 0
             vmWriter.writePop(POINTER, 1); // pop the array index calculated before and store it in POINTER 1, i.e. aligning THAT to the heap area beginning at that address
             vmWriter.writePush(TEMP, 0); // push the expression's value onto the stack again
@@ -317,8 +316,20 @@ public class CompilationEngine {
         }
     }
 
-    private void compileExpression() {
-        compileExpressionPoppingOperatorsFromStack(true);
+    private void compileArrayExpression() {
+        compileExpressionWithGroupingOperator(GroupingOperator.LEFT_SQUARE_BRACKET);
+    }
+
+    private void compileExpressionWithGroupingOperator(GroupingOperator groupingOperator) {
+        operatorStack.push(groupingOperator);
+        consumeSymbol(Symbol.valueOf(groupingOperator.name()));
+        compileGroupedExpression();
+        compileOperatorsOnStackUntilGroupingOperator(groupingOperator);
+        consumeSymbol(Symbol.valueOf("RIGHT" + groupingOperator.name().substring(AFTER_PREFIX_LEFT_INDEX)));
+    }
+
+    private void compileGroupedExpression() {
+        compileExpressionPoppingOperatorsFromStack(false);
     }
 
     private void compileExpressionPoppingOperatorsFromStack(boolean popOperatorsFromStack) {
@@ -391,16 +402,16 @@ public class CompilationEngine {
 
     private void compileThisPointerOrKeywordConstant() {
         if (isNextTokenOneOfKeywords(THIS)) {
-            compileThisPointer();
+            getThisPointer();
+            tokenConsumed();
         }
         else {
             compileKeywordConstant();
         }
     }
 
-    private void compileThisPointer() {
+    private void getThisPointer() {
         vmWriter.writePush(POINTER, 0);
-        tokenConsumed();
     }
 
     private void compileKeywordConstant() {
@@ -418,17 +429,7 @@ public class CompilationEngine {
         if (identifierIndex > -1) {
             boolean arrayExpression = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
             if (arrayExpression) { // varName[...]
-                operatorStack.push(GroupingOperator.LEFT_SQUARE_BRACKET);
-                consumeSymbol(LEFT_SQUARE_BRACKET);
-                compileGroupedExpression();
-                while (operatorStack.contains(GroupingOperator.LEFT_SQUARE_BRACKET)) {
-                    Operator operator = operatorStack.pop();
-                    if (operator == GroupingOperator.LEFT_SQUARE_BRACKET) {
-                        break;
-                    }
-                    vmWriter.writeArithmetic(operator);
-                }
-                consumeSymbol(RIGHT_SQUARE_BRACKET);
+                compileArrayExpression();
             }
             if (methodBody && (symbolTable.kindOf(identifier) == ARG)) {
                 ++identifierIndex;
@@ -450,17 +451,12 @@ public class CompilationEngine {
         }
     }
 
-    private void compileGroupedExpression() {
-        compileExpressionPoppingOperatorsFromStack(false);
-    }
-
     private void compileSubroutineCall(Optional<String> subroutineNameOrClassNameOrVarName) {
         String subroutineName = subroutineNameOrClassNameOrVarName.orElseGet(() -> consumeIdentifier());
         if (isNextTokenTheSymbol(LEFT_PARENTHESIS)) { // with subroutineName left of parenthesis
-            vmWriter.writePush(POINTER, 0);
+            getThisPointer();
             subroutineName = className + DOT + subroutineName;
             ++numberOfArguments;
-            consumeExpressionListWithParenthesis();
         }
         else if (isNextTokenTheSymbol(DOT)) { // with className or varName left of dot
             String objectType = symbolTable.typeOf(subroutineName);
@@ -471,8 +467,8 @@ public class CompilationEngine {
             }
             consumeSymbol(DOT);
             subroutineName += DOT + consumeIdentifier();
-            consumeExpressionListWithParenthesis();
         }
+        consumeExpressionListWithParenthesis();
         vmWriter.writeCall(subroutineName, numberOfArguments);
         numberOfArguments = 0;
     }
@@ -496,23 +492,27 @@ public class CompilationEngine {
         }
     }
 
+    private void compileExpression() {
+        compileExpressionPoppingOperatorsFromStack(true);
+    }
+
     private void compileGroupedExpressionOrUnaryOperator() {
         if (tokenizer.symbol() == LEFT_PARENTHESIS) {
-            operatorStack.push(GroupingOperator.LEFT_PARENTHESIS);
-            consumeSymbol(LEFT_PARENTHESIS);
-            compileGroupedExpression();
-            while (operatorStack.contains(GroupingOperator.LEFT_PARENTHESIS)) {
-                Operator operator = operatorStack.pop();
-                if (operator == GroupingOperator.LEFT_PARENTHESIS) {
-                    break;
-                }
-                vmWriter.writeArithmetic(operator);
-            }
-            consumeSymbol(RIGHT_PARENTHESIS);
+            compileExpressionWithGroupingOperator(GroupingOperator.LEFT_PARENTHESIS);
         }
         else if (UnaryOperator.isOperator(tokenizer.symbol())) {
             compileUnaryOperator();
             compileTerm();
+        }
+    }
+
+    private void compileOperatorsOnStackUntilGroupingOperator(GroupingOperator groupingOperator) {
+        while (operatorStack.contains(groupingOperator)) {
+            Operator operator = operatorStack.pop();
+            if (operator == groupingOperator) {
+                break;
+            }
+            vmWriter.writeArithmetic(operator);
         }
     }
 
@@ -603,7 +603,7 @@ public class CompilationEngine {
     }
 
     private void closeTokenizerAndVmWriter() {
-        // Hack
+        // hack
         while (tokenizer.hasMoreTokens()) {
         }
         vmWriter.close();

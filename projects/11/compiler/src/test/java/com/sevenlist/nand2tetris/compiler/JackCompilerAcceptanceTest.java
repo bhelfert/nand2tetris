@@ -45,6 +45,11 @@ public class JackCompilerAcceptanceTest {
         compareVmFileFor("ComplexArrays/Main.jack");
     }
 
+    @Test
+    public void compileSpecialCases() {
+        compareVmFileFor("SpecialCases/Main.jack");
+    }
+
     private void compareVmFileFor(String relativePathToSourceFile) {
         compile(relativePathToSourceFile);
 
