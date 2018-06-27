@@ -25,5 +25,5 @@ All chips are implemented using this [Hardware Description Language](http://www.
 
 * [Assembler](https://github.com/sevenlist/nand2tetris/tree/master/projects/06/assembler)
 * [Virtual Machine Translator](https://github.com/sevenlist/nand2tetris/tree/master/projects/08/vmtranslator)
-* [Compiler](https://github.com/sevenlist/nand2tetris/tree/master/projects/11/compiler) (for the [Jack](http://www.nand2tetris.org/lectures/PDF/lecture%2009%20high%20level%20language.pdf) programming language) - _work in progress_
+* [Compiler](https://github.com/sevenlist/nand2tetris/tree/master/projects/11/compiler) (for the [Jack](http://www.nand2tetris.org/lectures/PDF/lecture%2009%20high%20level%20language.pdf) programming language)
 * Operating System / standard library for Jack
