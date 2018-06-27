@@ -17,7 +17,7 @@ import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
 import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NEG;
 import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NOT;
 
-// Work in progress. Terribly messy code, needs to be cleaned up.
+// Terribly messy code, needs to be cleaned up.
 
 /**
  * Uses Dijkstra's <a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">Shunting Yard algorithm</a> to compile expressions.
@@ -234,23 +234,23 @@ public class CompilationEngine {
     }
 
     private void compileExpression() {
-        compileExpressionPoppingOperatorsOnStack(true);
+        compileExpressionPoppingOperatorsFromStack(true);
     }
 
     private void compileGroupedExpression() {
-        compileExpressionPoppingOperatorsOnStack(false);
+        compileExpressionPoppingOperatorsFromStack(false);
     }
 
-    private void compileExpressionPoppingOperatorsOnStack(boolean popOperatorsOnStack) {
+    private void compileExpressionPoppingOperatorsFromStack(boolean popOperatorsFromStack) {
         compileTerm();
         while (isNextTokenABinaryOperator()) {
             consumeBinaryOperator();
             compileTerm();
-            if (popOperatorsOnStack) {
+            if (popOperatorsFromStack) {
                 compileOperatorsOnStack();
             }
         }
-        if (popOperatorsOnStack) {
+        if (popOperatorsFromStack) {
             compileOperatorsOnStack();
         }
     }
@@ -278,8 +278,16 @@ public class CompilationEngine {
             if (identifierIndex > -1) {
                 boolean arrayExpression = isNextTokenTheSymbol(LEFT_SQUARE_BRACKET);
                 if (arrayExpression) { // varName[...]
+                    operatorStack.push(GroupingOperator.LEFT_SQUARE_BRACKET);
                     consumeSymbol(LEFT_SQUARE_BRACKET);
                     compileGroupedExpression();
+                    while (operatorStack.contains(GroupingOperator.LEFT_SQUARE_BRACKET)) {
+                        Operator operator = operatorStack.pop();
+                        if (operator == GroupingOperator.LEFT_SQUARE_BRACKET) {
+                            break;
+                        }
+                        vmWriter.writeArithmetic(operator);
+                    }
                     consumeSymbol(RIGHT_SQUARE_BRACKET);
                 }
                 if (methodBody && (symbolTable.kindOf(identifier) == ARG)) {
@@ -523,6 +531,9 @@ public class CompilationEngine {
     }
 
     private void compileOperatorsOnStack() {
+        if (operatorStack.contains(GroupingOperator.LEFT_PARENTHESIS) || operatorStack.contains(GroupingOperator.LEFT_SQUARE_BRACKET)) {
+            return;
+        }
         while (!operatorStack.isEmpty()) {
             Operator operator = operatorStack.pop();
             vmWriter.writeArithmetic(operator);

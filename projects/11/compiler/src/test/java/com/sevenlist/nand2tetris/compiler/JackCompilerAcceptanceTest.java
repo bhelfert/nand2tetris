@@ -1,6 +1,5 @@
 package com.sevenlist.nand2tetris.compiler;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,7 +40,6 @@ public class JackCompilerAcceptanceTest {
         compareVmFileFor("Pong/PongGame.jack");
     }
 
-    @Ignore
     @Test
     public void compileComplexArrays() {
         compareVmFileFor("ComplexArrays/Main.jack");
