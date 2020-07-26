@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 public enum TokenType {
 

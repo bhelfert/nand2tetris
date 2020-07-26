@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 import java.util.Map;
 import java.util.stream.Stream;

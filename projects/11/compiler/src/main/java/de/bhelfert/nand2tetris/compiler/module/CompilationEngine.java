@@ -1,21 +1,11 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.sevenlist.nand2tetris.compiler.module.BinaryOperator.ADD;
-import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
-import static com.sevenlist.nand2tetris.compiler.module.Keyword.STATIC;
-import static com.sevenlist.nand2tetris.compiler.module.Keyword.THIS;
-import static com.sevenlist.nand2tetris.compiler.module.Kind.ARG;
-import static com.sevenlist.nand2tetris.compiler.module.Kind.VAR;
-import static com.sevenlist.nand2tetris.compiler.module.Segment.*;
-import static com.sevenlist.nand2tetris.compiler.module.Symbol.*;
-import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
-import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NEG;
-import static com.sevenlist.nand2tetris.compiler.module.UnaryOperator.NOT;
+import static de.bhelfert.nand2tetris.compiler.module.BinaryOperator.ADD;
 
 // Messy code, needs clean up.
 
@@ -116,10 +106,10 @@ public class CompilationEngine {
     }
 
     private void compileClassVarDec() {
-        if (!isNextTokenOneOfKeywords(STATIC, FIELD)) {
+        if (!isNextTokenOneOfKeywords(Keyword.STATIC, FIELD)) {
             return;
         }
-        Keyword keyword = consumeKeyword(STATIC, FIELD);
+        Keyword keyword = consumeKeyword(Keyword.STATIC, FIELD);
         Kind kind = Kind.valueOf(keyword.name());
         String classVarType = consumeJackType();
         String classVarName = consumeIdentifier();
@@ -184,12 +174,12 @@ public class CompilationEngine {
         }
         String paramType = consumeJackType();
         String paramName = consumeIdentifier();
-        addIdentifierInformation(paramName, paramType, ARG);
+        addIdentifierInformation(paramName, paramType, Kind.ARG);
         while (isNextTokenTheSymbol(COMMA)) {
             consumeSymbol(COMMA);
             paramType = consumeJackType();
             paramName = consumeIdentifier();
-            addIdentifierInformation(paramName, paramType, ARG);
+            addIdentifierInformation(paramName, paramType, Kind.ARG);
         }
     }
 
@@ -227,17 +217,17 @@ public class CompilationEngine {
         consumeKeyword(Keyword.VAR);
         String varType = consumeJackType();
         String varName = consumeIdentifier();
-        addIdentifierInformation(varName, varType, VAR);
+        addIdentifierInformation(varName, varType, Kind.VAR);
         while (isNextTokenTheSymbol(COMMA)) {
             consumeSymbol(COMMA);
             varName = consumeIdentifier();
-            addIdentifierInformation(varName, varType, VAR);
+            addIdentifierInformation(varName, varType, Kind.VAR);
         }
         consumeSymbol(SEMICOLON);
     }
 
     private void writeVmFunction(Keyword subroutineKeyword, String subroutineName) {
-        int numberOfLocalVariables = (subroutineKeyword == CONSTRUCTOR) ? 0 : symbolTable.varCount(VAR);
+        int numberOfLocalVariables = (subroutineKeyword == CONSTRUCTOR) ? 0 : symbolTable.varCount(Kind.VAR);
         vmWriter.writeFunction(createFunctionName(subroutineName), numberOfLocalVariables);
     }
 
@@ -379,7 +369,7 @@ public class CompilationEngine {
     private void compileIntegerConstant() {
         vmWriter.writePush(CONSTANT, Math.abs(tokenizer.intVal()));
         if (tokenizer.intVal() < 0) {
-            vmWriter.writeArithmetic(NEG);
+            vmWriter.writeArithmetic(UnaryOperator.NEG);
         }
         tokenConsumed();
     }
@@ -397,11 +387,11 @@ public class CompilationEngine {
     }
 
     private boolean isTokenTheThisPointerOrAKeywordConstant() {
-        return isNextTokenOneOfKeywords(THIS) || KEYWORD_CONSTANTS.contains(tokenizer.keyword());
+        return isNextTokenOneOfKeywords(Keyword.THIS) || KEYWORD_CONSTANTS.contains(tokenizer.keyword());
     }
 
     private void compileThisPointerOrKeywordConstant() {
-        if (isNextTokenOneOfKeywords(THIS)) {
+        if (isNextTokenOneOfKeywords(Keyword.THIS)) {
             getThisPointer();
             tokenConsumed();
         }
@@ -418,7 +408,7 @@ public class CompilationEngine {
         vmWriter.writePush(CONSTANT, 0);
         if (isNextTokenOneOfKeywords(TRUE)) {
             // true == -1, i.e. ~(0000 0000) = 1111 1111
-            vmWriter.writeArithmetic(NOT);
+            vmWriter.writeArithmetic(UnaryOperator.NOT);
         }
         tokenConsumed();
     }
@@ -431,7 +421,7 @@ public class CompilationEngine {
             if (arrayExpression) { // varName[...]
                 compileArrayExpression();
             }
-            if (methodBody && (symbolTable.kindOf(identifier) == ARG)) {
+            if (methodBody && (symbolTable.kindOf(identifier) == Kind.ARG)) {
                 ++identifierIndex;
             }
             if (!isNextTokenTheSymbol(DOT)) {
@@ -576,7 +566,7 @@ public class CompilationEngine {
         vmWriter.writeLabel("WHILE_EXP" + labelNumber);
         compileExpression();
         consumeSymbol(RIGHT_PARENTHESIS);
-        vmWriter.writeArithmetic(NOT);
+        vmWriter.writeArithmetic(UnaryOperator.NOT);
         vmWriter.writeIf("WHILE_END" + labelNumber);
         consumeStatementBlock();
         vmWriter.writeGoto("WHILE_EXP" + labelNumber);

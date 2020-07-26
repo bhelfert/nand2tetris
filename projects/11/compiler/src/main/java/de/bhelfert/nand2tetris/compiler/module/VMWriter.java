@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 import java.io.BufferedWriter;
 import java.io.File;
