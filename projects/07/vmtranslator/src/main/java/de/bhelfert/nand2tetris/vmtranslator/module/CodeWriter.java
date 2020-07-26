@@ -1,11 +1,9 @@
-package com.sevenlist.nand2tetris.vmtranslator.module;
+package de.bhelfert.nand2tetris.vmtranslator.module;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
-import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
 
 public class CodeWriter {
 
@@ -68,15 +66,15 @@ public class CodeWriter {
 
     private void push(Segment segment, int valueOrIndex) {
         writeComment("push " + segment + " " + valueOrIndex);
-        if (segment.equals(CONSTANT)) {
+        if (segment.equals(Segment.CONSTANT)) {
             writeLine("@" + valueOrIndex);
             writeLine("D=A");
         }
         else {
-            if (segment.equals(POINTER)) {
+            if (segment.equals(Segment.POINTER)) {
                 writeLine("@" + ((valueOrIndex == 1) ? "R4" : segment.baseAddress()));
             }
-            else if (segment.equals(STATIC)) {
+            else if (segment.equals(Segment.STATIC)) {
                 writeLine("@" + createStaticAddress(valueOrIndex));
             }
             else {
@@ -97,16 +95,16 @@ public class CodeWriter {
 
     private void pop(Segment segment, int index) {
         writeComment("pop " + segment.toString() + " " + index);
-        if (!segment.equals(POINTER) && !segment.equals(STATIC) && index > 0) {
+        if (!segment.equals(Segment.POINTER) && !segment.equals(Segment.STATIC) && index > 0) {
             writeAddressOfSegmentIndexToR13(segment, index);
         }
         writeLine("@SP");
         writeLine("AM=M-1");
         writeLine("D=M");
-        if (segment.equals(POINTER)) {
+        if (segment.equals(Segment.POINTER)) {
             writeLine("@" + ((index == 1) ? "R4" : segment.baseAddress()));
         }
-        else if (segment.equals(STATIC)) {
+        else if (segment.equals(Segment.STATIC)) {
             writeLine("@" + createStaticAddress(index));
         }
         else {
@@ -118,7 +116,7 @@ public class CodeWriter {
 
     private void writeAddressOfSegmentIndexToR13(Segment segment, int index) {
         writeLine("@" + segment.baseAddress());
-        writeLine("D=" + (segment.equals(TEMP) ? "A" : "M"));
+        writeLine("D=" + (segment.equals(Segment.TEMP) ? "A" : "M"));
         writeLine("@" + index);
         writeLine("D=A+D");
         writeLine("@R13");

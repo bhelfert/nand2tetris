@@ -1,8 +1,8 @@
-package com.sevenlist.nand2tetris.vmtranslator.module;
+package de.bhelfert.nand2tetris.vmtranslator.module;
 
 import java.io.*;
 
-import static com.sevenlist.nand2tetris.vmtranslator.module.CommandType.*;
+import static de.bhelfert.nand2tetris.vmtranslator.module.CommandType.*;
 
 public class Parser {
 
