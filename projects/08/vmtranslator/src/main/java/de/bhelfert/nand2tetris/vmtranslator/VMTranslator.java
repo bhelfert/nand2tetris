@@ -1,9 +1,9 @@
-package com.sevenlist.nand2tetris.vmtranslator;
+package de.bhelfert.nand2tetris.vmtranslator;
 
-import com.sevenlist.nand2tetris.vmtranslator.module.ArithmeticCommand;
-import com.sevenlist.nand2tetris.vmtranslator.module.CodeWriter;
-import com.sevenlist.nand2tetris.vmtranslator.module.Parser;
-import com.sevenlist.nand2tetris.vmtranslator.module.Segment;
+import de.bhelfert.nand2tetris.vmtranslator.module.ArithmeticCommand;
+import de.bhelfert.nand2tetris.vmtranslator.module.CodeWriter;
+import de.bhelfert.nand2tetris.vmtranslator.module.Parser;
+import de.bhelfert.nand2tetris.vmtranslator.module.Segment;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.vmtranslator;
+package de.bhelfert.nand2tetris.vmtranslator;
 
 import org.assertj.core.util.Files;
 import org.junit.Test;

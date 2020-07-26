@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.vmtranslator.module;
+package de.bhelfert.nand2tetris.vmtranslator.module;
 
 public enum CommandType {
 

@@ -1,11 +1,9 @@
-package com.sevenlist.nand2tetris.vmtranslator.module;
+package de.bhelfert.nand2tetris.vmtranslator.module;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
-import static com.sevenlist.nand2tetris.vmtranslator.module.Segment.*;
 
 public class CodeWriter {
 

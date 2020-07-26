@@ -1,8 +1,6 @@
-package com.sevenlist.nand2tetris.vmtranslator.module;
+package de.bhelfert.nand2tetris.vmtranslator.module;
 
 import java.io.*;
-
-import static com.sevenlist.nand2tetris.vmtranslator.module.CommandType.*;
 
 public class Parser {
 
@@ -77,18 +75,18 @@ public class Parser {
 
     public Object arg1() {
         switch (commandType()) {
-            case C_ARITHMETIC:
+            case CommandType.C_ARITHMETIC:
                 return ArithmeticCommand.fromString(currentCommand);
 
-            case C_CALL:
-            case C_FUNCTION:
-            case C_GOTO:
-            case C_IF:
-            case C_LABEL:
+            case CommandType.C_CALL:
+            case CommandType.C_FUNCTION:
+            case CommandType.C_GOTO:
+            case CommandType.C_IF:
+            case CommandType.C_LABEL:
                 return firstArg();
 
-            case C_POP:
-            case C_PUSH:
+            case CommandType.C_POP:
+            case CommandType.C_PUSH:
                 return Segment.fromString(firstArg());
         }
         throw new RuntimeException("Unhandled command type: [" + commandType() + "]");
