@@ -13,7 +13,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'com.sevenlist.nand2tetris.assembler.Assembler'
+        attributes 'Main-Class': 'de.bhelfert.nand2tetris.assembler.Assembler'
     }
 }
 

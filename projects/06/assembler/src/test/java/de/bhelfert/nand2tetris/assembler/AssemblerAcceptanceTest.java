@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.assembler;
+package de.bhelfert.nand2tetris.assembler;
 
 import org.junit.Test;
 

@@ -1,8 +1,6 @@
-package com.sevenlist.nand2tetris.assembler.module;
+package de.bhelfert.nand2tetris.assembler.module;
 
 import java.io.*;
-
-import static com.sevenlist.nand2tetris.assembler.module.CommandType.*;
 
 public class Parser {
 
@@ -43,25 +41,25 @@ public class Parser {
     public CommandType commandType() {
         currentCommand = currentCommand.trim();
         if (currentCommand.startsWith("/")) {
-            return NO_COMMAND;
+            return CommandType.NO_COMMAND;
         }
         if (currentCommand.startsWith("@")) {
-            return A_COMMAND;
+            return CommandType.A_COMMAND;
         }
         if (currentCommand.contains(EQUAL_SIGN) || currentCommand.contains(SEMICOLON)) {
-            return C_COMMAND;
+            return CommandType.C_COMMAND;
         }
         if (currentCommand.startsWith("(")) {
-            return L_COMMAND;
+            return CommandType.L_COMMAND;
         }
-        return NO_COMMAND;
+        return CommandType.NO_COMMAND;
     }
 
     public String symbol() {
-        if (commandType().equals(NO_COMMAND)) {
+        if (commandType().equals(CommandType.NO_COMMAND)) {
             return "";
         }
-        if (commandType().equals(L_COMMAND)) {
+        if (commandType().equals(CommandType.L_COMMAND)) {
             return currentCommand.substring(1, currentCommand.indexOf(')'));
         }
         return currentCommand.substring(1).split("/")[0].trim();

@@ -1,16 +1,14 @@
-package com.sevenlist.nand2tetris.assembler;
+package de.bhelfert.nand2tetris.assembler;
 
-import com.sevenlist.nand2tetris.assembler.module.Code;
-import com.sevenlist.nand2tetris.assembler.module.Parser;
-import com.sevenlist.nand2tetris.assembler.module.SymbolTable;
+import de.bhelfert.nand2tetris.assembler.module.Code;
+import de.bhelfert.nand2tetris.assembler.module.Parser;
+import de.bhelfert.nand2tetris.assembler.module.SymbolTable;
+import de.bhelfert.nand2tetris.assembler.module.CommandType;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
-import static com.sevenlist.nand2tetris.assembler.module.CommandType.L_COMMAND;
-import static com.sevenlist.nand2tetris.assembler.module.CommandType.NO_COMMAND;
 
 public class Assembler {
 
@@ -42,10 +40,10 @@ public class Assembler {
         int commandCounter = -1;
         while (parser.hasMoreCommands()) {
             parser.advance();
-            if (parser.commandType().equals(L_COMMAND)) {
+            if (parser.commandType().equals(CommandType.L_COMMAND)) {
                 symbolTable.addEntry(parser.symbol(), commandCounter + 1);
             }
-            else if (!parser.commandType().equals(NO_COMMAND)) {
+            else if (!parser.commandType().equals(CommandType.NO_COMMAND)) {
                 ++commandCounter;
             }
         }

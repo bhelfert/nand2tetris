@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.assembler.module;
+package de.bhelfert.nand2tetris.assembler.module;
 
 import java.util.HashMap;
 import java.util.Map;
