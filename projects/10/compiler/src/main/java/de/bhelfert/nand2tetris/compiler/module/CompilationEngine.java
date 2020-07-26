@@ -1,4 +1,4 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8,9 +8,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.sevenlist.nand2tetris.compiler.module.Keyword.*;
-import static com.sevenlist.nand2tetris.compiler.module.Symbol.*;
-import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
+import static de.bhelfert.nand2tetris.compiler.module.Keyword.*;
+import static de.bhelfert.nand2tetris.compiler.module.Symbol.*;
+import static de.bhelfert.nand2tetris.compiler.module.TokenType.*;
 
 // Needs refactoring.
 public class CompilationEngine {

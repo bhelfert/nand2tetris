@@ -1,6 +1,6 @@
-package com.sevenlist.nand2tetris.compiler;
+package de.bhelfert.nand2tetris.compiler;
 
-import com.sevenlist.nand2tetris.compiler.module.CompilationEngine;
+import de.bhelfert.nand2tetris.compiler.module.CompilationEngine;
 
 import java.io.File;
 import java.io.IOException;

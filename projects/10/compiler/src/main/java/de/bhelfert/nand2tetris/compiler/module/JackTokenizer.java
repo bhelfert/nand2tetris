@@ -1,10 +1,10 @@
-package com.sevenlist.nand2tetris.compiler.module;
+package de.bhelfert.nand2tetris.compiler.module;
 
 import java.io.*;
 import java.util.regex.Pattern;
 
-import static com.sevenlist.nand2tetris.compiler.module.JackTokenizer.ScanMode.*;
-import static com.sevenlist.nand2tetris.compiler.module.TokenType.*;
+import static de.bhelfert.nand2tetris.compiler.module.JackTokenizer.ScanMode.*;
+import static de.bhelfert.nand2tetris.compiler.module.TokenType.*;
 
 public class JackTokenizer {
 
